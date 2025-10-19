@@ -1,0 +1,11 @@
+/* You can add global styles to this file, and also import other style files */
+@use "./app/shared/styles/_reset.scss";
+@use "./app/shared/styles/font-family.scss";
+@use "./styles.css";
+
+:root {
+  font-size: 16px;
+  font-family: "Lato";
+  margin: 0;
+  background-color: #f8f8f8;
+}

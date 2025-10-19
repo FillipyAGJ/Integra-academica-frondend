@@ -1,0 +1,32 @@
+:host {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-direction: column;
+}
+
+.card-opcao-instituicao {
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  flex-direction: column;
+  margin-top: 5em;
+  background-color: #ffffff;
+  width: 40em;
+  height: 15em;
+  padding: 2em;
+  box-shadow: 0px 6px 13px -4px rgba(0, 0, 0, 0.51);
+  border-radius: 20px;
+}
+
+.card-opcao-instituicao h3 {
+  font-size: 1.5em;
+}
+
+#instituicao-select {
+  width: 27em;
+}
+
+.enviar-instituicao {
+  background-color: #0096c7;
+}

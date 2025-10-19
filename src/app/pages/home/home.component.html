@@ -1,0 +1,20 @@
+<app-informacao-integra> </app-informacao-integra>
+<div class="card-opcao-instituicao">
+  <h3>Escolha a instituição que deseja abaixo:</h3>
+  <z-select
+    (zSelectionChange)="handleSelect($event)"
+    zPlaceholder="Selecione uma instituição"
+    id="instituicao-select"
+  >
+    <z-select-item zValue="ifb">IFB</z-select-item>
+    <z-select-item zValue="ifsp">IFSP</z-select-item>
+  </z-select>
+  <button
+    z-button
+    class="enviar-instituicao"
+    (click)="redirecionarInstituicao()"
+    [disabled]="!sigla()"
+  >
+    Enviar
+  </button>
+</div>
