@@ -1,0 +1,23 @@
+:host {
+  display: block;
+}
+
+.grafico {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.grafico-chart {
+  background-color: #fff;
+  margin-top: 2em;
+  width: 100%;
+  font-size: 2em;
+  box-shadow: 0px 6px 13px -4px rgba(0, 0, 0, 0.51);
+  border-radius: 20px;
+}
+
+.grafico-chart h3 {
+  margin-left: 1.2em;
+  margin-top: 1.2em;
+}

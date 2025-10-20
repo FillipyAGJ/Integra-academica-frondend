@@ -1,18 +1,24 @@
 :host {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.section-home {
+  width: 80%;
 }
 
 .cards-list {
   display: flex;
   align-items: center;
-  justify-content: space-around;
+  justify-content: space-between;
   margin-top: 3em;
 }
 
 .cards-items {
   display: flex;
   align-items: center;
-  justify-content: space-evenly;
   flex-direction: column;
 
   background-color: #fff;
