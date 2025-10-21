@@ -9,10 +9,19 @@
 
   @if (!isHome()) {
   <nav class="nav-menu">
-    <a href="">Início</a>
-    <a href="">Buscar Docentes</a>
-    <a href="">Painel Analítico</a>
-    <a href="">Sobre</a>
+    @if (sigla(); as s) {
+    <a [routerLink]="['/dashboard', s]">Início</a>
+    } @if (sigla(); as s) {
+    <a [routerLink]="['/dashboard', s, 'busca-docentes']">Buscar Docentes</a>
+    } @if (sigla(); as s) {
+    <a [routerLink]="['/dashboard', s, 'producao-cientifica']"
+      >Painel Científica</a
+    >
+    } @if (sigla(); as s) {
+    <a [routerLink]="['/dashboard', s, 'temas-tendencias']"
+      >Temas e Tendências</a
+    >
+    }
   </nav>
   }
 </div>

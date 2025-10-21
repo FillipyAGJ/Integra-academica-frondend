@@ -2,30 +2,36 @@
 <section class="section-home">
   <div class="cards-list">
     <div class="cards">
-      <a href="">
+      @if (sigla(); as s) {
+      <a [routerLink]="['/dashboard', s, 'busca-docentes']">
         <div class="cards-items">
           <img src="zoom-icon.svg" alt="" />
           <h3>Buscar Docentes</h3>
         </div>
       </a>
+      }
     </div>
 
     <div class="cards">
-      <a href="">
+      @if (sigla(); as s) {
+      <a [routerLink]="['/dashboard', s, 'producao-cientifica']">
         <div class="cards-items">
           <img src="bar-chart-icon.svg" alt="" />
           <h3>Produção Científica</h3>
         </div>
       </a>
+      }
     </div>
 
     <div class="cards">
-      <a href="">
+      @if (sigla(); as s) {
+      <a [routerLink]="['/dashboard', s, 'temas-tendencias']">
         <div class="cards-items">
           <img src="communication-icon.svg" alt="" />
           <h3>Temas e Tendências</h3>
         </div>
       </a>
+      }
     </div>
   </div>
   <app-producao-linha></app-producao-linha>

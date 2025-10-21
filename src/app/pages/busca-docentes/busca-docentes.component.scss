@@ -1,3 +1,71 @@
 :host {
   display: block;
 }
+
+.buscar-docente-tela {
+  margin-top: 2em;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.buscar-docente-tela h1 {
+  font-size: 2em;
+}
+
+.formulario-content {
+  margin-left: 3em;
+  max-width: 620px;
+  width: 100%;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 620px;
+  width: 100%;
+}
+
+.input-g {
+  width: 38.8em;
+  background-color: #fff;
+}
+
+.campus-titulacao {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-direction: row;
+  width: 100%;
+}
+
+.campus-titulacao .selects {
+  background-color: #fff;
+  width: 18.2em;
+}
+
+.botoes-form {
+  display: flex;
+  align-items: center;
+  gap: 2.2em;
+}
+
+button[type="submit"] {
+  background-color: #0096c7;
+  padding: 1.5em 5em;
+  width: 18.2em;
+}
+
+button[zType="secondary"] {
+  background-color: #ffffff;
+  padding: 1.5em 5em;
+  width: 18.2em;
+}
+
+h3 {
+  margin-top: 2em;
+  color: #a0a0a0;
+  font-size: 1.1em;
+}

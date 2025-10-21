@@ -1,2 +1,87 @@
-<p>busca-docentes works!</p>
-,
+<div class="buscar-docente-tela">
+  <div class="formulario-content">
+    <h1>Buscar Docentes</h1>
+    <form class="space-y-6 max-w-sm" [formGroup]="form">
+      <z-form-field>
+        <z-form-control>
+          <input
+            class="input-g"
+            z-input
+            type="text"
+            [id]="busca_palavra_chave"
+            placeholder="Busque por nome, palavra-chave ou tema..."
+            formControlName="busca_palavra_chave"
+            name="busca_palavra_chave"
+          />
+        </z-form-control>
+      </z-form-field>
+
+      <div class="campus-titulacao">
+        <z-form-field>
+          <z-form-control>
+            <z-select
+              id="campus"
+              formControlName="campus"
+              zPlaceholder="Campus"
+              class="selects"
+            >
+              @for (campus of countries; track campus.value) {
+              <z-select-item [zValue]="campus.value">{{
+                campus.label
+              }}</z-select-item>
+              }
+            </z-select>
+          </z-form-control>
+        </z-form-field>
+
+        <!-- Country Selector -->
+        <z-form-field>
+          <z-form-control>
+            <z-select
+              id="titulacao"
+              formControlName="titulacao"
+              zPlaceholder="Titulação"
+              class="selects"
+            >
+              @for (titulacao of countries; track titulacao.value) {
+              <z-select-item [zValue]="titulacao.value">{{
+                titulacao.label
+              }}</z-select-item>
+              }
+            </z-select>
+          </z-form-control>
+        </z-form-field>
+      </div>
+
+      <!-- Country Selector -->
+      <z-form-field>
+        <z-form-control>
+          <z-select
+            id="areaDeAtuacao"
+            formControlName="areaDeAtuacao"
+            zPlaceholder="Área de Atuação"
+            class="input-g"
+          >
+            @for (areaDeAtuacao of countries; track areaDeAtuacao.value) {
+            <z-select-item [zValue]="areaDeAtuacao.value">{{
+              areaDeAtuacao.label
+            }}</z-select-item>
+            }
+          </z-select>
+        </z-form-control>
+      </z-form-field>
+
+      <div class="botoes-form">
+        <button z-button zType="default" type="submit">Buscar</button>
+        <button z-button zType="secondary">Limpar filtros</button>
+      </div>
+    </form>
+    <h3>
+      Clique em buscar para explorar todos os docentes ou use os filtros para um
+      busca mais precisa.
+    </h3>
+  </div>
+  <div>
+    <img src="freepik__background.svg" alt="" />
+  </div>
+</div>

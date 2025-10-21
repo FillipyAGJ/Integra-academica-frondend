@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
-import { NavigationEnd, Router } from '@angular/router';
+import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { Subject, filter, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-menu-geral',
+  imports: [RouterLink],
   templateUrl: './menu-geral.component.html',
   styleUrl: './menu-geral.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -13,12 +14,21 @@ export class MenuGeralComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   isHome = signal(false);
+  sigla = signal<string | null>(null);
 
   ngOnInit(): void {
     const setFlag = (url: string) => {
-      console.log("executei o meu fi: ", url)
       this.isHome.set((url === '/home' || url === '/'));
+
+      const match = url.match(/\/dashboard\/([^/]+)/);
+      if (match) {
+        this.sigla.set(match[1]); // 👈 E ESTE BLOCO
+      } else {
+        this.sigla.set(null);
+      }
     };
+
+
 
     setFlag(this.router.url);
 
@@ -31,5 +41,8 @@ export class MenuGeralComponent implements OnInit, OnDestroy {
       );
   }
 
-  ngOnDestroy() { this.destroy$.next(); this.destroy$.complete(); }
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 }
