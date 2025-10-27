@@ -258,4 +258,23 @@ export class DocentesService {
     );
     return of(resultados).pipe(delay(500));
   }
+
+  getDocentesPorArea(area: string): Observable<Docente[]> {
+    const resultados = this.docentesMock.filter(
+      (docente) => docente.areaAtuacao === area
+    );
+    return of(resultados).pipe(delay(500));
+  }
+
+  getCampusLabel(valor: string): string {
+    const opcao = this.campusOptions.find((campus) => campus.value === valor);
+    return opcao?.label || valor;
+  }
+
+  getTitulacaoLabel(valor: string): string {
+    const opcao = this.titulacaoOptions.find(
+      (titulacao) => titulacao.value === valor
+    );
+    return opcao?.label || valor;
+  }
 }
