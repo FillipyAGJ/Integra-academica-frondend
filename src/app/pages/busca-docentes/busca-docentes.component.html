@@ -1,7 +1,8 @@
+@if (!searched()) {
 <div class="buscar-docente-tela">
   <div class="formulario-content">
     <h1>Buscar Docentes</h1>
-    <form class="space-y-6 max-w-sm" [formGroup]="form">
+    <form class="space-y-6 max-w-sm" [formGroup]="form" (ngSubmit)="onSubmit()">
       <z-form-field>
         <z-form-control>
           <input
@@ -25,7 +26,7 @@
               zPlaceholder="Campus"
               class="selects"
             >
-              @for (campus of countries; track campus.value) {
+              @for (campus of campusOptions; track campus.value) {
               <z-select-item [zValue]="campus.value">{{
                 campus.label
               }}</z-select-item>
@@ -34,7 +35,6 @@
           </z-form-control>
         </z-form-field>
 
-        <!-- Country Selector -->
         <z-form-field>
           <z-form-control>
             <z-select
@@ -43,7 +43,7 @@
               zPlaceholder="Titulação"
               class="selects"
             >
-              @for (titulacao of countries; track titulacao.value) {
+              @for (titulacao of titulacaoOptions; track titulacao.value) {
               <z-select-item [zValue]="titulacao.value">{{
                 titulacao.label
               }}</z-select-item>
@@ -53,7 +53,6 @@
         </z-form-field>
       </div>
 
-      <!-- Country Selector -->
       <z-form-field>
         <z-form-control>
           <z-select
@@ -62,7 +61,8 @@
             zPlaceholder="Área de Atuação"
             class="input-g"
           >
-            @for (areaDeAtuacao of countries; track areaDeAtuacao.value) {
+            @for (areaDeAtuacao of areasAtuacaoOptions; track
+            areaDeAtuacao.value) {
             <z-select-item [zValue]="areaDeAtuacao.value">{{
               areaDeAtuacao.label
             }}</z-select-item>
@@ -72,16 +72,110 @@
       </z-form-field>
 
       <div class="botoes-form">
-        <button z-button zType="default" type="submit">Buscar</button>
-        <button z-button zType="secondary">Limpar filtros</button>
+        <button z-button zType="default" type="submit" [disabled]="loading()">
+          {{ loading() ? "Buscando..." : "Buscar" }}
+        </button>
+        <button
+          z-button
+          zType="secondary"
+          type="button"
+          (click)="limparFiltros()"
+        >
+          Limpar filtros
+        </button>
       </div>
     </form>
+
+    @if (!searched()) {
     <h3>
-      Clique em buscar para explorar todos os docentes ou use os filtros para um
-      busca mais precisa.
+      Clique em buscar para explorar todos os docentes ou use os filtros para
+      uma busca mais precisa.
     </h3>
+    }
   </div>
-  <div>
-    <img src="freepik__background.svg" alt="" />
+
+  <div class="imagem-ilustrativa">
+    <img src="freepik__background.svg" alt="Ilustração de busca de docentes" />
   </div>
 </div>
+}
+
+<!-- Resultados da Busca -->
+@if (searched()) {
+<div class="resultados-busca">
+  <h1>Resultados da Busca</h1>
+
+  <!-- Filtro de busca no topo -->
+  <div class="filtro-busca-topo">
+    <input
+      type="text"
+      placeholder="Busque por nome, palavra-chave ou tema..."
+      class="input-busca-resultados"
+      [formControl]="form.controls.busca_palavra_chave"
+      (keyup.enter)="buscarDocentes()"
+    />
+  </div>
+
+  @if (loading()) {
+  <div class="loading-state">
+    <p>Carregando resultados...</p>
+  </div>
+  } @else { @if (resultadosVazios()) {
+  <div class="sem-resultados">
+    <h2>Nenhum docente encontrado</h2>
+    <p>Tente ajustar os filtros de busca para encontrar mais resultados.</p>
+  </div>
+  } @else {
+  <div class="lista-resultados">
+    <div class="docentes-grid-compact">
+      @for (docente of docentesPaginados(); track docente.id) {
+      <div class="docente-card-compact">
+        <div class="docente-avatar-compact">
+          @if (docente.foto) {
+          <img [src]="docente.foto" [alt]="docente.nome" />
+          } @else {
+          <div class="avatar-placeholder-compact">
+            {{ docente.nome.charAt(0) }}
+          </div>
+          }
+        </div>
+
+        <div class="docente-info-compact">
+          <h3>{{ docente.nome }}</h3>
+          <p class="campus-info">{{ getCampusLabel(docente.campus) }}</p>
+          <p class="area-info">{{ getAreaLabel(docente.areaAtuacao) }}</p>
+        </div>
+
+        <div class="docente-acao-compact">
+          <button z-button zType="default" class="btn-ver-perfil">
+            Ver Perfil
+          </button>
+        </div>
+      </div>
+      }
+    </div>
+
+    <!-- Paginação -->
+    @if (totalPaginas() > 1) {
+    <div class="paginacao">
+      <button
+        class="btn-paginacao"
+        (click)="paginaAnterior()"
+        [disabled]="paginaAtual() === 1"
+      >
+        &lt;
+      </button>
+      <span class="pagina-atual">{{ paginaAtual() }}</span>
+      <button
+        class="btn-paginacao"
+        (click)="proximaPagina()"
+        [disabled]="paginaAtual() === totalPaginas()"
+      >
+        &gt;
+      </button>
+    </div>
+    }
+  </div>
+  } }
+</div>
+}

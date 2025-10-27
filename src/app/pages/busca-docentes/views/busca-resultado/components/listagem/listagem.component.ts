@@ -8,4 +8,4 @@ import { CardComponent } from './components/card/card.component';
   styleUrl: './listagem.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ListagemComponent {}
+export class ListagemComponent { }

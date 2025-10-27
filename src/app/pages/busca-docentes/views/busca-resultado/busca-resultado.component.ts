@@ -8,4 +8,4 @@ import { ListagemComponent } from './components/listagem/listagem.component';
   styleUrl: './busca-resultado.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class BuscaResultadoComponent {}
+export class BuscaResultadoComponent { }

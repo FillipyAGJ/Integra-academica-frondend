@@ -1,11 +1,14 @@
 <div class="menu">
-  <div class="logo-area">
-    <img src="icon-social-network.svg" alt="" />
-    <div class="logo-area-text">
-      <p>Integra</p>
-      <p>Acadêmica</p>
+  <a [routerLink]="['/home']">
+    <div class="logo-area">
+      <img src="icon-social-network.svg" alt="" />
+
+      <div class="logo-area-text">
+        <p>Integra</p>
+        <p>Acadêmica</p>
+      </div>
     </div>
-  </div>
+  </a>
 
   @if (!isHome()) {
   <nav class="nav-menu">
