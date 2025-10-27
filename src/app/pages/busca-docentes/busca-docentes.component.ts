@@ -1,4 +1,9 @@
-import { ChangeDetectionStrategy, Component, signal, computed } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  signal,
+  computed,
+} from '@angular/core';
 import { FormGroup, FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ZardButtonComponent } from '@shared/components/button/button.component';
 import { ZardInputDirective } from '@shared/components/input/input.directive';
@@ -29,7 +34,7 @@ interface Docente {
     ZardInputDirective,
     ZardFormModule,
     ZardSelectComponent,
-    ZardSelectItemComponent
+    ZardSelectItemComponent,
   ],
   templateUrl: './busca-docentes.component.html',
   styleUrl: './busca-docentes.component.scss',
@@ -64,7 +69,7 @@ export class BuscaDocentesComponent {
     busca_palavra_chave: new FormControl(''),
     campus: new FormControl(''),
     titulacao: new FormControl(''),
-    areaDeAtuacao: new FormControl('')
+    areaDeAtuacao: new FormControl(''),
   });
 
   readonly campusOptions = [
@@ -102,7 +107,7 @@ export class BuscaDocentesComponent {
       campus: 'campus1',
       areaAtuacao: 'exatas',
       email: 'joao.silva@universidade.br',
-      lattes: 'http://lattes.cnpq.br/1234567890'
+      lattes: 'http://lattes.cnpq.br/1234567890',
     },
     {
       id: 2,
@@ -111,7 +116,7 @@ export class BuscaDocentesComponent {
       campus: 'campus2',
       areaAtuacao: 'biologicas',
       email: 'maria.santos@universidade.br',
-      lattes: 'http://lattes.cnpq.br/0987654321'
+      lattes: 'http://lattes.cnpq.br/0987654321',
     },
     {
       id: 3,
@@ -120,7 +125,7 @@ export class BuscaDocentesComponent {
       campus: 'campus1',
       areaAtuacao: 'engenharias',
       email: 'carlos.oliveira@universidade.br',
-      lattes: 'http://lattes.cnpq.br/1122334455'
+      lattes: 'http://lattes.cnpq.br/1122334455',
     },
     {
       id: 4,
@@ -129,7 +134,7 @@ export class BuscaDocentesComponent {
       campus: 'campus3',
       areaAtuacao: 'humanas',
       email: 'ana.costa@universidade.br',
-      lattes: 'http://lattes.cnpq.br/5566778899'
+      lattes: 'http://lattes.cnpq.br/5566778899',
     },
     {
       id: 5,
@@ -138,7 +143,7 @@ export class BuscaDocentesComponent {
       campus: 'campus2',
       areaAtuacao: 'saude',
       email: 'roberto.ferreira@universidade.br',
-      lattes: 'http://lattes.cnpq.br/6677889900'
+      lattes: 'http://lattes.cnpq.br/6677889900',
     },
     {
       id: 6,
@@ -147,7 +152,7 @@ export class BuscaDocentesComponent {
       campus: 'campus1',
       areaAtuacao: 'sociais',
       email: 'juliana.mendes@universidade.br',
-      lattes: 'http://lattes.cnpq.br/1231231234'
+      lattes: 'http://lattes.cnpq.br/1231231234',
     },
     {
       id: 7,
@@ -156,7 +161,7 @@ export class BuscaDocentesComponent {
       campus: 'campus3',
       areaAtuacao: 'exatas',
       email: 'fernando.lima@universidade.br',
-      lattes: 'http://lattes.cnpq.br/3213213214'
+      lattes: 'http://lattes.cnpq.br/3213213214',
     },
     {
       id: 8,
@@ -165,7 +170,7 @@ export class BuscaDocentesComponent {
       campus: 'campus2',
       areaAtuacao: 'biologicas',
       email: 'patricia.rocha@universidade.br',
-      lattes: 'http://lattes.cnpq.br/4564564567'
+      lattes: 'http://lattes.cnpq.br/4564564567',
     },
     {
       id: 9,
@@ -174,7 +179,7 @@ export class BuscaDocentesComponent {
       campus: 'campus1',
       areaAtuacao: 'engenharias',
       email: 'rodrigo.almeida@universidade.br',
-      lattes: 'http://lattes.cnpq.br/7897897890'
+      lattes: 'http://lattes.cnpq.br/7897897890',
     },
     {
       id: 10,
@@ -183,7 +188,7 @@ export class BuscaDocentesComponent {
       campus: 'campus3',
       areaAtuacao: 'humanas',
       email: 'camila.barbosa@universidade.br',
-      lattes: 'http://lattes.cnpq.br/9879879871'
+      lattes: 'http://lattes.cnpq.br/9879879871',
     },
     {
       id: 11,
@@ -192,7 +197,7 @@ export class BuscaDocentesComponent {
       campus: 'campus2',
       areaAtuacao: 'saude',
       email: 'lucas.cardoso@universidade.br',
-      lattes: 'http://lattes.cnpq.br/1471471478'
+      lattes: 'http://lattes.cnpq.br/1471471478',
     },
     {
       id: 12,
@@ -201,7 +206,7 @@ export class BuscaDocentesComponent {
       campus: 'campus1',
       areaAtuacao: 'sociais',
       email: 'beatriz.souza@universidade.br',
-      lattes: 'http://lattes.cnpq.br/2582582589'
+      lattes: 'http://lattes.cnpq.br/2582582589',
     },
     {
       id: 13,
@@ -210,7 +215,7 @@ export class BuscaDocentesComponent {
       campus: 'campus3',
       areaAtuacao: 'exatas',
       email: 'rafael.araujo@universidade.br',
-      lattes: 'http://lattes.cnpq.br/3693693690'
+      lattes: 'http://lattes.cnpq.br/3693693690',
     },
     {
       id: 14,
@@ -219,7 +224,7 @@ export class BuscaDocentesComponent {
       campus: 'campus2',
       areaAtuacao: 'biologicas',
       email: 'mariana.gomes@universidade.br',
-      lattes: 'http://lattes.cnpq.br/7417417411'
+      lattes: 'http://lattes.cnpq.br/7417417411',
     },
     {
       id: 15,
@@ -228,8 +233,8 @@ export class BuscaDocentesComponent {
       campus: 'campus1',
       areaAtuacao: 'engenharias',
       email: 'paulo.henrique@universidade.br',
-      lattes: 'http://lattes.cnpq.br/8528528522'
-    }
+      lattes: 'http://lattes.cnpq.br/8528528522',
+    },
   ];
 
   buscarDocentes(): void {
@@ -243,34 +248,55 @@ export class BuscaDocentesComponent {
       let resultados = [...this.docentesMock];
 
       // Filtra por palavra-chave
-      if (formValue.busca_palavra_chave && formValue.busca_palavra_chave.trim()) {
+      if (
+        formValue.busca_palavra_chave &&
+        formValue.busca_palavra_chave.trim()
+      ) {
         const termo = formValue.busca_palavra_chave.toLowerCase().trim();
-        resultados = resultados.filter(d =>
-          d.nome.toLowerCase().includes(termo) ||
-          d.areaAtuacao.toLowerCase().includes(termo) ||
-          d.titulacao.toLowerCase().includes(termo) ||
-          d.email.toLowerCase().includes(termo) ||
-          d.campus.toLowerCase().includes(termo) ||
-          d.email.toLowerCase().includes(termo)
+        resultados = resultados.filter(
+          (d) =>
+            d.nome.toLowerCase().includes(termo) ||
+            d.areaAtuacao.toLowerCase().includes(termo) ||
+            d.titulacao.toLowerCase().includes(termo) ||
+            d.email.toLowerCase().includes(termo) ||
+            d.campus.toLowerCase().includes(termo) ||
+            d.email.toLowerCase().includes(termo)
         );
       }
 
       // Filtra por campus (ignora se for 'todos' ou vazio)
-      if (formValue.campus && formValue.campus !== 'todos' && formValue.campus !== '') {
-        resultados = resultados.filter(d => d.campus.toLowerCase() === formValue.campus?.toLowerCase());
+      if (
+        formValue.campus &&
+        formValue.campus !== 'todos' &&
+        formValue.campus !== ''
+      ) {
+        resultados = resultados.filter(
+          (d) => d.campus.toLowerCase() === formValue.campus?.toLowerCase()
+        );
       }
 
       // Filtra por titulação (ignora se for 'todas' ou vazio)
-      if (formValue.titulacao && formValue.titulacao !== 'todas' && formValue.titulacao !== '') {
-        resultados = resultados.filter(d =>
-          d.titulacao.toLowerCase() === formValue.titulacao?.toLowerCase()
+      if (
+        formValue.titulacao &&
+        formValue.titulacao !== 'todas' &&
+        formValue.titulacao !== ''
+      ) {
+        resultados = resultados.filter(
+          (d) =>
+            d.titulacao.toLowerCase() === formValue.titulacao?.toLowerCase()
         );
       }
 
       // Filtra por área de atuação (ignora se for 'todas' ou vazio)
-      if (formValue.areaDeAtuacao && formValue.areaDeAtuacao !== 'todas' && formValue.areaDeAtuacao !== '') {
-        resultados = resultados.filter(d =>
-          d.areaAtuacao.toLowerCase() === formValue.areaDeAtuacao?.toLowerCase()
+      if (
+        formValue.areaDeAtuacao &&
+        formValue.areaDeAtuacao !== 'todas' &&
+        formValue.areaDeAtuacao !== ''
+      ) {
+        resultados = resultados.filter(
+          (d) =>
+            d.areaAtuacao.toLowerCase() ===
+            formValue.areaDeAtuacao?.toLowerCase()
         );
       }
 
@@ -285,7 +311,7 @@ export class BuscaDocentesComponent {
       busca_palavra_chave: '',
       campus: '',
       titulacao: '',
-      areaDeAtuacao: ''
+      areaDeAtuacao: '',
     });
     this.docentes.set([]);
     this.searched.set(false);
@@ -302,7 +328,9 @@ export class BuscaDocentesComponent {
     if (pagina >= 1 && pagina <= this.totalPaginas()) {
       this.paginaAtual.set(pagina);
       // Scroll suave para o topo dos resultados
-      document.querySelector('.resultados-busca')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document
+        .querySelector('.resultados-busca')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }
 
@@ -316,17 +344,17 @@ export class BuscaDocentesComponent {
 
   // Métodos auxiliares para converter valores em labels
   getTitulacaoLabel(valor: string): string {
-    const opcao = this.titulacaoOptions.find(t => t.value === valor);
+    const opcao = this.titulacaoOptions.find((t) => t.value === valor);
     return opcao?.label || valor;
   }
 
   getCampusLabel(valor: string): string {
-    const opcao = this.campusOptions.find(c => c.value === valor);
+    const opcao = this.campusOptions.find((c) => c.value === valor);
     return opcao?.label || valor;
   }
 
   getAreaLabel(valor: string): string {
-    const opcao = this.areasAtuacaoOptions.find(a => a.value === valor);
+    const opcao = this.areasAtuacaoOptions.find((a) => a.value === valor);
     return opcao?.label || valor;
   }
 }
