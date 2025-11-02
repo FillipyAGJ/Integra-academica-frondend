@@ -278,3 +278,20 @@ export class DocentesService {
     return opcao?.label || valor;
   }
 }
+
+
+// import { HttpClient } from '@angular/common/http';
+
+// @Injectable({ providedIn: 'root' })
+// export class DocentesService {
+//   private http = inject(HttpClient);
+//   private apiUrl = 'https://sua-api.com/api';
+
+//   getDocentes(): Observable<Docente[]> {
+//     return this.http.get<Docente[]>(`${this.apiUrl}/docentes`);
+//   }
+
+//   buscarDocentes(filtros: any): Observable<Docente[]> {
+//     return this.http.post<Docente[]>(`${this.apiUrl}/docentes/buscar`, filtros);
+//   }
+// }
