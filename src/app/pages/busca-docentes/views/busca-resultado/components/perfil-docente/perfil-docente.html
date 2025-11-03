@@ -1,0 +1,147 @@
+<div class="perfil-docente-container">
+  @if (loading()) {
+  <div class="loading-state">
+    <p>Carregando perfil...</p>
+  </div>
+  } @else if (docente()) {
+  <div class="perfil-content">
+    <!-- Header com informações básicas -->
+    <div class="perfil-header">
+      <div class="docente-info-principal">
+        <div class="avatar-grande">
+          <div class="avatar-placeholder-grande">{{ primeiraLetra() }}</div>
+        </div>
+
+        <div class="info-texto">
+          <h1>{{ docente()?.nome || docente()?.nome_completo }}</h1>
+          <p class="campus">
+            {{ docente()?.campus || 'Campus não informado' }}
+          </p>
+          <p class="areas">
+            {{ docente()?.palavras_chave!.split(',')[0] || 'Área não informada'
+            }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resumo/Bio -->
+    <div class="secao-card resumo-card">
+      <p>
+        {{ docente()?.resumo || 'Lorem ipsum is simply dummy text of the
+        printing and typesetting industry. Lorem Ipsum has been the industry\'s
+        standard dummy text ever since the 1500s, when an unknown printer took a
+        galley of type and scrambled it to make a type specimen book.' }}
+      </p>
+    </div>
+
+    <!-- Grid de gráficos e informações -->
+    <div class="graficos-grid">
+      <!-- Evolução da Produção Científica -->
+      <div class="secao-card grafico-card">
+        <h3>Evolução da Produção Científica</h3>
+        <div class="grafico-linha">
+          <svg viewBox="0 0 300 150" class="linha-svg">
+            <polyline
+              points="20,130 70,110 120,80 170,60 220,40 270,20"
+              fill="none"
+              stroke="#0096c7"
+              stroke-width="3"
+            />
+            @for (ponto of producaoCientifica(); track ponto.ano) {
+            <circle
+              [attr.cx]="20 + ($index * 62.5)"
+              [attr.cy]="150 - (ponto.quantidade * 7)"
+              r="4"
+              fill="#0096c7"
+            />
+            }
+          </svg>
+          <div class="eixo-x">
+            @for (ponto of producaoCientifica(); track ponto.ano) {
+            <span>{{ ponto.ano }}</span>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Distribuição por Produção -->
+      <div class="secao-card grafico-card">
+        <h3>Distribuição por Produção</h3>
+        <div class="grafico-pizza">
+          <svg viewBox="0 0 200 200" class="pizza-svg">
+            <circle cx="100" cy="100" r="80" fill="#0096c7" />
+            <circle
+              cx="100"
+              cy="100"
+              r="80"
+              fill="#48cae4"
+              stroke-dasharray="125 377"
+              stroke-dashoffset="0"
+              transform="rotate(-90 100 100)"
+            />
+            <circle
+              cx="100"
+              cy="100"
+              r="80"
+              fill="#023e8a"
+              stroke-dasharray="63 377"
+              stroke-dashoffset="-125"
+              transform="rotate(-90 100 100)"
+            />
+            <circle
+              cx="100"
+              cy="100"
+              r="80"
+              fill="#90e0ef"
+              stroke-dasharray="94 377"
+              stroke-dashoffset="-188"
+              transform="rotate(-90 100 100)"
+            />
+          </svg>
+        </div>
+        <div class="legenda-pizza">
+          @for (item of distribuicaoProducao(); track item.tipo) {
+          <div class="legenda-item">
+            <span
+              class="cor-indicador"
+              [style.background-color]="item.cor"
+            ></span>
+            <span class="legenda-texto">{{ item.tipo }}</span>
+          </div>
+          }
+        </div>
+      </div>
+
+      <!-- Palavras-chave da pesquisa -->
+      <div class="secao-card palavras-card">
+        <h3>O que a Rede Federal de Educação está pesquisando?</h3>
+        <div class="nuvem-palavras">
+          @for (palavra of getPalavrasChave(); track palavra) {
+          <span class="palavra" [style.font-size.px]="14 + ($index % 3) * 6">
+            {{ palavra }}
+          </span>
+          }
+        </div>
+      </div>
+
+      <!-- Índice de Crescimento -->
+      <div class="secao-card crescimento-card">
+        <h3>Índice de Crescimento Anual da Produção</h3>
+        <div class="crescimento-valor">
+          <span class="percentual">{{ crescimentoAnual() }}</span>
+          <p class="descricao">em relação ao ano anterior</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botão Exportar -->
+    <div class="acoes-perfil">
+      <button class="btn-exportar" (click)="exportarPerfil()">
+        Exportar perfil
+      </button>
+      <button class="btn-voltar" (click)="voltar()">Voltar</button>
+    </div>
+  </div>
+  }
+</div>

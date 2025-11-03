@@ -1,6 +1,14 @@
+<!-- producao-linha.component.html -->
 <div class="grafico">
   <div class="grafico-chart">
-    <h3>Produção Cientifica ao longo dos anos no IF</h3>
-    <div echarts [options]="options" class="demo-chart"></div>
+    <h3>Produção Científica ao longo dos anos no IF</h3>
+
+    @if (loading()) {
+    <div class="loading-state">
+      <p>Carregando dados...</p>
+    </div>
+    } @else {
+    <div echarts [options]="options()" class="demo-chart"></div>
+    }
   </div>
 </div>

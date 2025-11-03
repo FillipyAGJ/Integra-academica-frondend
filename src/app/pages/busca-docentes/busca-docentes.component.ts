@@ -1,27 +1,26 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  signal,
-  computed,
-} from '@angular/core';
-import { FormGroup, FormControl, ReactiveFormsModule } from '@angular/forms';
+// buscar-docentes.component.ts
+import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { ZardButtonComponent } from '@shared/components/button/button.component';
 import { ZardInputDirective } from '@shared/components/input/input.directive';
 import { ZardFormModule } from '@shared/components/form/form.module';
-import { generateId } from '@shared/utils/merge-classes';
 import { ZardSelectComponent } from '@shared/components/select/select.component';
 import { ZardSelectItemComponent } from '@shared/components/select/select-item.component';
-import { CommonModule } from '@angular/common';
+import { Docente, DocentesService } from 'src/app/core/services/docentes.service';
+import { ActivatedRoute, Router } from '@angular/router';
 
-interface Docente {
-  id: number;
-  nome: string;
-  titulacao: string;
-  campus: string;
-  areaAtuacao: string;
-  email: string;
-  foto?: string;
-  lattes?: string;
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+interface BuscaDocentesForm {
+  busca_palavra_chave: FormControl<string | null>;
+  campus: FormControl<string | null>;
+  titulacao: FormControl<string | null>;
+  areaDeAtuacao: FormControl<string | null>;
 }
 
 @Component({
@@ -40,270 +39,187 @@ interface Docente {
   styleUrl: './busca-docentes.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class BuscaDocentesComponent {
-  protected readonly busca_palavra_chave = generateId('busca_palavra_chave');
+export class BuscaDocentesComponent implements OnInit {
+  private docentesService = inject(DocentesService);
+  private fb = inject(FormBuilder);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
 
-  // Signals para gerenciar o estado
-  docentes = signal<Docente[]>([]);
+  // Signals
+  todosDocentes = signal<Docente[]>([]);
+  docentesFiltrados = signal<Docente[]>([]);
   loading = signal(false);
   searched = signal(false);
-  resultadosVazios = signal(false);
   paginaAtual = signal(1);
-  itensPorPagina = 6;
+  itensPorPagina = 12;
 
-  // Computed signal para resultados paginados
-  docentesPaginados = computed(() => {
-    const todos = this.docentes();
-    const pagina = this.paginaAtual();
-    const inicio = (pagina - 1) * this.itensPorPagina;
-    const fim = inicio + this.itensPorPagina;
-    return todos.slice(inicio, fim);
-  });
 
-  // Computed signal para total de páginas
-  totalPaginas = computed(() => {
-    return Math.ceil(this.docentes().length / this.itensPorPagina);
-  });
 
-  form = new FormGroup({
-    busca_palavra_chave: new FormControl(''),
-    campus: new FormControl(''),
-    titulacao: new FormControl(''),
-    areaDeAtuacao: new FormControl(''),
-  });
+  // Form com tipagem forte
+  form: FormGroup<BuscaDocentesForm>;
 
-  readonly campusOptions = [
-    { value: 'todos', label: 'Todos os Campus' },
-    { value: 'campus1', label: 'Campus 1' },
-    { value: 'campus2', label: 'Campus 2' },
-    { value: 'campus3', label: 'Campus 3' },
-  ] as const;
-
-  readonly titulacaoOptions = [
-    { value: 'todas', label: 'Todas as Titulações' },
-    { value: 'graduacao', label: 'Graduação' },
-    { value: 'especializacao', label: 'Especialização' },
-    { value: 'mestrado', label: 'Mestrado' },
+  // Options para os selects
+  campusOptions: SelectOption[] = [];
+  titulacaoOptions: SelectOption[] = [
+    { value: '', label: 'Todas' },
+    { value: 'pos_doutorado', label: 'Pós-Doutorado' },
     { value: 'doutorado', label: 'Doutorado' },
-    { value: 'pos-doutorado', label: 'Pós-Doutorado' },
-  ] as const;
-
-  readonly areasAtuacaoOptions = [
-    { value: 'todas', label: 'Todas as Áreas' },
-    { value: 'exatas', label: 'Ciências Exatas' },
-    { value: 'humanas', label: 'Ciências Humanas' },
-    { value: 'biologicas', label: 'Ciências Biológicas' },
-    { value: 'saude', label: 'Ciências da Saúde' },
-    { value: 'engenharias', label: 'Engenharias' },
-    { value: 'sociais', label: 'Ciências Sociais Aplicadas' },
-  ] as const;
-
-  // Dados mockados para demonstração
-  private readonly docentesMock: Docente[] = [
-    {
-      id: 1,
-      nome: 'Dr. João Silva',
-      titulacao: 'doutorado',
-      campus: 'campus1',
-      areaAtuacao: 'exatas',
-      email: 'joao.silva@universidade.br',
-      lattes: 'http://lattes.cnpq.br/1234567890',
-    },
-    {
-      id: 2,
-      nome: 'Dra. Maria Santos',
-      titulacao: 'pos-doutorado',
-      campus: 'campus2',
-      areaAtuacao: 'biologicas',
-      email: 'maria.santos@universidade.br',
-      lattes: 'http://lattes.cnpq.br/0987654321',
-    },
-    {
-      id: 3,
-      nome: 'Dr. Carlos Oliveira',
-      titulacao: 'mestrado',
-      campus: 'campus1',
-      areaAtuacao: 'engenharias',
-      email: 'carlos.oliveira@universidade.br',
-      lattes: 'http://lattes.cnpq.br/1122334455',
-    },
-    {
-      id: 4,
-      nome: 'Dra. Ana Paula Costa',
-      titulacao: 'doutorado',
-      campus: 'campus3',
-      areaAtuacao: 'humanas',
-      email: 'ana.costa@universidade.br',
-      lattes: 'http://lattes.cnpq.br/5566778899',
-    },
-    {
-      id: 5,
-      nome: 'Dr. Roberto Ferreira',
-      titulacao: 'especializacao',
-      campus: 'campus2',
-      areaAtuacao: 'saude',
-      email: 'roberto.ferreira@universidade.br',
-      lattes: 'http://lattes.cnpq.br/6677889900',
-    },
-    {
-      id: 6,
-      nome: 'Dra. Juliana Mendes',
-      titulacao: 'doutorado',
-      campus: 'campus1',
-      areaAtuacao: 'sociais',
-      email: 'juliana.mendes@universidade.br',
-      lattes: 'http://lattes.cnpq.br/1231231234',
-    },
-    {
-      id: 7,
-      nome: 'Dr. Fernando Lima',
-      titulacao: 'pos-doutorado',
-      campus: 'campus3',
-      areaAtuacao: 'exatas',
-      email: 'fernando.lima@universidade.br',
-      lattes: 'http://lattes.cnpq.br/3213213214',
-    },
-    {
-      id: 8,
-      nome: 'Dra. Patricia Rocha',
-      titulacao: 'mestrado',
-      campus: 'campus2',
-      areaAtuacao: 'biologicas',
-      email: 'patricia.rocha@universidade.br',
-      lattes: 'http://lattes.cnpq.br/4564564567',
-    },
-    {
-      id: 9,
-      nome: 'Dr. Rodrigo Almeida',
-      titulacao: 'doutorado',
-      campus: 'campus1',
-      areaAtuacao: 'engenharias',
-      email: 'rodrigo.almeida@universidade.br',
-      lattes: 'http://lattes.cnpq.br/7897897890',
-    },
-    {
-      id: 10,
-      nome: 'Dra. Camila Barbosa',
-      titulacao: 'pos-doutorado',
-      campus: 'campus3',
-      areaAtuacao: 'humanas',
-      email: 'camila.barbosa@universidade.br',
-      lattes: 'http://lattes.cnpq.br/9879879871',
-    },
-    {
-      id: 11,
-      nome: 'Dr. Lucas Cardoso',
-      titulacao: 'mestrado',
-      campus: 'campus2',
-      areaAtuacao: 'saude',
-      email: 'lucas.cardoso@universidade.br',
-      lattes: 'http://lattes.cnpq.br/1471471478',
-    },
-    {
-      id: 12,
-      nome: 'Dra. Beatriz Souza',
-      titulacao: 'doutorado',
-      campus: 'campus1',
-      areaAtuacao: 'sociais',
-      email: 'beatriz.souza@universidade.br',
-      lattes: 'http://lattes.cnpq.br/2582582589',
-    },
-    {
-      id: 13,
-      nome: 'Dr. Rafael Araújo',
-      titulacao: 'especializacao',
-      campus: 'campus3',
-      areaAtuacao: 'exatas',
-      email: 'rafael.araujo@universidade.br',
-      lattes: 'http://lattes.cnpq.br/3693693690',
-    },
-    {
-      id: 14,
-      nome: 'Dra. Mariana Gomes',
-      titulacao: 'pos-doutorado',
-      campus: 'campus2',
-      areaAtuacao: 'biologicas',
-      email: 'mariana.gomes@universidade.br',
-      lattes: 'http://lattes.cnpq.br/7417417411',
-    },
-    {
-      id: 15,
-      nome: 'Dr. Paulo Henrique',
-      titulacao: 'doutorado',
-      campus: 'campus1',
-      areaAtuacao: 'engenharias',
-      email: 'paulo.henrique@universidade.br',
-      lattes: 'http://lattes.cnpq.br/8528528522',
-    },
+    { value: 'mestrado', label: 'Mestrado' },
+    { value: 'graduacao', label: 'Graduação' }
   ];
+  areasAtuacaoOptions: SelectOption[] = [];
 
+  // Computed signals
+  resultadosVazios = computed(() => this.docentesFiltrados().length === 0);
+
+  totalPaginas = computed(() =>
+    Math.ceil(this.docentesFiltrados().length / this.itensPorPagina)
+  );
+
+  docentesPaginados = computed(() => {
+    const inicio = (this.paginaAtual() - 1) * this.itensPorPagina;
+    const fim = inicio + this.itensPorPagina;
+    return this.docentesFiltrados().slice(inicio, fim);
+  });
+
+  constructor() {
+    this.form = this.fb.group<BuscaDocentesForm>({
+      busca_palavra_chave: this.fb.control(''),
+      campus: this.fb.control(''),
+      titulacao: this.fb.control(''),
+      areaDeAtuacao: this.fb.control('')
+    });
+  }
+
+  ngOnInit(): void {
+    this.carregarDados();
+    this.setupBuscaAutomatica();
+  }
+
+  // ✅ Adicionar debounce na busca automática
+  setupBuscaAutomatica(): void {
+    this.form.controls.busca_palavra_chave.valueChanges
+      .pipe(
+        debounceTime(500), // Espera 500ms após o usuário parar de digitar
+        distinctUntilChanged()
+      )
+      .subscribe(() => {
+        if (this.searched()) {
+          this.buscarDocentes();
+        }
+      });
+  }
+
+  carregarDados(): void {
+    this.loading.set(true);
+    this.docentesService.carregarDocentes().subscribe({
+      next: (docentes) => {
+        this.todosDocentes.set(docentes);
+        this.docentesFiltrados.set(docentes);
+        this.popularOpcoes(docentes);
+        this.loading.set(false);
+      },
+      error: (err) => {
+        console.error('Erro ao carregar docentes:', err);
+        this.loading.set(false);
+      }
+    });
+  }
+
+  // ✅ Melhorar a limpeza e formatação das palavras-chave
+  popularOpcoes(docentes: Docente[]): void {
+    // Campus
+    const campusUnicos = [...new Set(docentes.map(d => d.campus).filter(c => c))].sort();
+    this.campusOptions = [
+      { value: '', label: 'Todos' },
+      ...campusUnicos.map(c => ({ value: c, label: c }))
+    ];
+
+    // Áreas de atuação (baseado em palavras-chave) - COM LIMPEZA
+    const palavrasChave = new Set<string>();
+    docentes.forEach(d => {
+      if (d.palavras_chave) {
+        // Limpar HTML entities e caracteres especiais
+        const palavrasLimpas = d.palavras_chave
+          .replace(/&[#\w]+;/g, '') // Remove HTML entities como &#8730;, &quot;
+          .replace(/[^\w\s,áàâãéèêíïóôõöúçñÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇÑ-]/g, '') // Remove caracteres especiais
+          .split(',')
+          .map(p => p.trim())
+          .filter(p => p.length > 2); // Apenas palavras com mais de 2 caracteres
+
+        palavrasLimpas.forEach(p => {
+          if (p) palavrasChave.add(p);
+        });
+      }
+    });
+
+    // Limitar a 50 opções mais comuns para evitar lentidão
+    const areasArray = Array.from(palavrasChave)
+      .sort()
+      .slice(0, 50);
+
+    this.areasAtuacaoOptions = [
+      { value: '', label: 'Todas' },
+      ...areasArray.map(a => ({ value: a, label: a }))
+    ];
+  }
+
+  onSubmit(): void {
+    this.buscarDocentes();
+  }
+
+  // ✅ Otimizar a busca usando setTimeout para não travar a UI
   buscarDocentes(): void {
     this.loading.set(true);
     this.searched.set(true);
-    this.paginaAtual.set(1); // Reset para primeira página ao buscar
+    this.paginaAtual.set(1);
 
-    // Simula uma chamada à API
+    // Usar setTimeout para não bloquear a UI
     setTimeout(() => {
-      const formValue = this.form.value;
-      let resultados = [...this.docentesMock];
+      const valores = this.form.value;
+      let resultados = [...this.todosDocentes()];
 
-      // Filtra por palavra-chave
-      if (
-        formValue.busca_palavra_chave &&
-        formValue.busca_palavra_chave.trim()
-      ) {
-        const termo = formValue.busca_palavra_chave.toLowerCase().trim();
-        resultados = resultados.filter(
-          (d) =>
-            d.nome.toLowerCase().includes(termo) ||
-            d.areaAtuacao.toLowerCase().includes(termo) ||
-            d.titulacao.toLowerCase().includes(termo) ||
-            d.email.toLowerCase().includes(termo) ||
-            d.campus.toLowerCase().includes(termo) ||
-            d.email.toLowerCase().includes(termo)
+      // Filtro por texto
+      if (valores.busca_palavra_chave) {
+        const texto = valores.busca_palavra_chave.toLowerCase().trim();
+        if (texto) {
+          resultados = resultados.filter(d =>
+            d.nome?.toLowerCase().includes(texto) ||
+            d.nome_completo?.toLowerCase().includes(texto) ||
+            d.palavras_chave?.toLowerCase().includes(texto) ||
+            d.resumo?.toLowerCase().includes(texto)
+          );
+        }
+      }
+
+      // Filtro por campus
+      if (valores.campus) {
+        resultados = resultados.filter(d => d.campus === valores.campus);
+      }
+
+      // Filtro por titulação
+      if (valores.titulacao) {
+        resultados = resultados.filter(d => {
+          switch (valores.titulacao) {
+            case 'pos_doutorado': return d.tem_pos_doutorado;
+            case 'doutorado': return d.tem_doutorado && !d.tem_pos_doutorado;
+            case 'mestrado': return d.tem_mestrado && !d.tem_doutorado;
+            case 'graduacao': return d.tem_graduacao && !d.tem_mestrado;
+            default: return true;
+          }
+        });
+      }
+
+      // Filtro por área de atuação
+      if (valores.areaDeAtuacao) {
+        resultados = resultados.filter(d =>
+          d.palavras_chave?.toLowerCase().includes(valores.areaDeAtuacao!.toLowerCase())
         );
       }
 
-      // Filtra por campus (ignora se for 'todos' ou vazio)
-      if (
-        formValue.campus &&
-        formValue.campus !== 'todos' &&
-        formValue.campus !== ''
-      ) {
-        resultados = resultados.filter(
-          (d) => d.campus.toLowerCase() === formValue.campus?.toLowerCase()
-        );
-      }
-
-      // Filtra por titulação (ignora se for 'todas' ou vazio)
-      if (
-        formValue.titulacao &&
-        formValue.titulacao !== 'todas' &&
-        formValue.titulacao !== ''
-      ) {
-        resultados = resultados.filter(
-          (d) =>
-            d.titulacao.toLowerCase() === formValue.titulacao?.toLowerCase()
-        );
-      }
-
-      // Filtra por área de atuação (ignora se for 'todas' ou vazio)
-      if (
-        formValue.areaDeAtuacao &&
-        formValue.areaDeAtuacao !== 'todas' &&
-        formValue.areaDeAtuacao !== ''
-      ) {
-        resultados = resultados.filter(
-          (d) =>
-            d.areaAtuacao.toLowerCase() ===
-            formValue.areaDeAtuacao?.toLowerCase()
-        );
-      }
-
-      this.docentes.set(resultados);
-      this.resultadosVazios.set(resultados.length === 0);
+      this.docentesFiltrados.set(resultados);
       this.loading.set(false);
-    }, 500);
+    }, 0);
   }
 
   limparFiltros(): void {
@@ -311,50 +227,55 @@ export class BuscaDocentesComponent {
       busca_palavra_chave: '',
       campus: '',
       titulacao: '',
-      areaDeAtuacao: '',
+      areaDeAtuacao: ''
     });
-    this.docentes.set([]);
+    this.docentesFiltrados.set(this.todosDocentes());
     this.searched.set(false);
-    this.resultadosVazios.set(false);
     this.paginaAtual.set(1);
   }
 
-  onSubmit(): void {
-    this.buscarDocentes();
-  }
-
-  // Métodos de paginação
-  irParaPagina(pagina: number): void {
-    if (pagina >= 1 && pagina <= this.totalPaginas()) {
-      this.paginaAtual.set(pagina);
-      // Scroll suave para o topo dos resultados
-      document
-        .querySelector('.resultados-busca')
-        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  proximaPagina(): void {
+    if (this.paginaAtual() < this.totalPaginas()) {
+      this.paginaAtual.update(p => p + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' }); // ✅ Scroll suave ao trocar página
     }
   }
 
-  proximaPagina(): void {
-    this.irParaPagina(this.paginaAtual() + 1);
-  }
-
   paginaAnterior(): void {
-    this.irParaPagina(this.paginaAtual() - 1);
+    if (this.paginaAtual() > 1) {
+      this.paginaAtual.update(p => p - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' }); // ✅ Scroll suave ao trocar página
+    }
   }
 
-  // Métodos auxiliares para converter valores em labels
-  getTitulacaoLabel(valor: string): string {
-    const opcao = this.titulacaoOptions.find((t) => t.value === valor);
-    return opcao?.label || valor;
+  irParaPrimeiraPagina(): void {
+    this.paginaAtual.set(1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  getCampusLabel(valor: string): string {
-    const opcao = this.campusOptions.find((c) => c.value === valor);
-    return opcao?.label || valor;
+  irParaUltimaPagina(): void {
+    this.paginaAtual.set(this.totalPaginas());
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  getAreaLabel(valor: string): string {
-    const opcao = this.areasAtuacaoOptions.find((a) => a.value === valor);
-    return opcao?.label || valor;
+  getCampusLabel(campus: string): string {
+    return campus || 'Campus não informado';
+  }
+
+  getAreaLabel(palavrasChave: string | undefined): string {
+    if (!palavrasChave) return 'Área não informada';
+    // Limpar HTML entities antes de exibir
+    const limpo = palavrasChave.replace(/&[#\w]+;/g, '');
+    const areas = limpo.split(',').map(p => p.trim()).filter(p => p);
+    return areas[0] || 'Área não informada';
+  }
+
+  getPrimeiraLetra(nome: string): string {
+    return nome?.charAt(0).toUpperCase() || '?';
+  }
+
+  verPerfil(docenteId: number): void {
+    const sigla = this.route.snapshot.paramMap.get('sigla');
+    this.router.navigate(['/dashboard', sigla, 'busca-docentes', 'perfil', docenteId]);
   }
 }

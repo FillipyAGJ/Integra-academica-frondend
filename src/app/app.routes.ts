@@ -4,6 +4,7 @@ import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { BuscaDocentesComponent } from './pages/busca-docentes/busca-docentes.component';
 import { ProducaoCientificaComponent } from './pages/producao-cientifica/producao-cientifica.component';
 import { TemasTendenciasComponent } from './pages/temas-tendencias/temas-tendencias.component';
+import { PerfilDocenteComponent } from './pages/busca-docentes/views/busca-resultado/components/perfil-docente/perfil-docente';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' },
@@ -13,10 +14,10 @@ export const routes: Routes = [
     path: 'dashboard/:sigla/busca-docentes',
     component: BuscaDocentesComponent,
   },
-  // {
-  //   path: 'dashboard/:sigla/busca-docentes/:docente',
-  //   component: BuscaResultadoComponent,
-  // },
+  {
+    path: 'dashboard/:sigla/busca-docentes/perfil/:id',
+    component: PerfilDocenteComponent,
+  },
   {
     path: 'dashboard/:sigla/producao-cientifica',
     component: ProducaoCientificaComponent,

@@ -4,7 +4,7 @@ import { MenuGeralComponent } from '@shared/components/menu-geral/menu-geral.com
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, MenuGeralComponent],
+  imports: [RouterOutlet, MenuGeralComponent,],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })

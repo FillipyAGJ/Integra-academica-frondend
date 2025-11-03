@@ -1,0 +1,265 @@
+.perfil-docente-container {
+  min-height: 100vh;
+  background-color: #f7fafc;
+  padding: 2rem;
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
+}
+
+.loading-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+  font-size: 1.2rem;
+  color: #4a5568;
+}
+
+.perfil-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.perfil-header {
+  background: white;
+  border-radius: 1rem;
+  padding: 2.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+  .docente-info-principal {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+
+    @media (max-width: 640px) {
+      flex-direction: column;
+      text-align: center;
+    }
+  }
+
+  .avatar-grande {
+    flex-shrink: 0;
+
+    .avatar-placeholder-grande {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #0096c7 0%, #005f7f 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 3rem;
+      font-weight: 700;
+    }
+  }
+
+  .info-texto {
+    flex: 1;
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #2d3748;
+      margin: 0 0 0.5rem 0;
+    }
+
+    .campus {
+      font-size: 1.1rem;
+      color: #4a5568;
+      margin: 0.25rem 0;
+    }
+
+    .areas {
+      font-size: 1rem;
+      color: #718096;
+      margin: 0.25rem 0;
+    }
+  }
+}
+
+.secao-card {
+  background: white;
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+  h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin: 0 0 1.5rem 0;
+  }
+}
+
+.resumo-card {
+  margin-bottom: 2rem;
+
+  p {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: #4a5568;
+    margin: 0;
+  }
+}
+
+.graficos-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+  margin-bottom: 2rem;
+
+  @media (max-width: 968px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.grafico-card {
+  .grafico-linha {
+    .linha-svg {
+      width: 100%;
+      height: 150px;
+    }
+
+    .eixo-x {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 0.5rem;
+      padding: 0 20px;
+
+      span {
+        font-size: 0.875rem;
+        color: #718096;
+      }
+    }
+  }
+
+  .grafico-pizza {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+
+    .pizza-svg {
+      width: 200px;
+      height: 200px;
+    }
+  }
+
+  .legenda-pizza {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+
+    .legenda-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      .cor-indicador {
+        width: 16px;
+        height: 16px;
+        border-radius: 4px;
+      }
+
+      .legenda-texto {
+        font-size: 0.95rem;
+        color: #4a5568;
+      }
+    }
+  }
+}
+
+.palavras-card {
+  .nuvem-palavras {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+    align-items: center;
+    min-height: 150px;
+
+    .palavra {
+      color: #2d3748;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      cursor: default;
+
+      &:hover {
+        color: #0096c7;
+        transform: scale(1.1);
+      }
+    }
+  }
+}
+
+.crescimento-card {
+  .crescimento-valor {
+    text-align: center;
+    padding: 2rem 0;
+
+    .percentual {
+      font-size: 4rem;
+      font-weight: 700;
+      color: #0096c7;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    .descricao {
+      font-size: 1rem;
+      color: #718096;
+      margin: 0;
+    }
+  }
+}
+
+.acoes-perfil {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2rem;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+  }
+
+  .btn-exportar,
+  .btn-voltar {
+    padding: 1rem 3rem;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+
+    @media (max-width: 640px) {
+      width: 100%;
+    }
+  }
+
+  .btn-exportar {
+    background-color: #0096c7;
+    color: white;
+
+    &:hover {
+      background-color: #007ea7;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 150, 199, 0.3);
+    }
+  }
+
+  .btn-voltar {
+    background-color: white;
+    color: #4a5568;
+    border: 1px solid #e2e8f0;
+
+    &:hover {
+      background-color: #f7fafc;
+      border-color: #cbd5e0;
+    }
+  }
+}

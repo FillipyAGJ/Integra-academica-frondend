@@ -28,8 +28,6 @@ export class MenuGeralComponent implements OnInit, OnDestroy {
       }
     };
 
-
-
     setFlag(this.router.url);
 
     this.router.events

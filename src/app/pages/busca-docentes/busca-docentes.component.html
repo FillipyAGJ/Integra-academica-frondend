@@ -9,7 +9,7 @@
             class="input-g"
             z-input
             type="text"
-            [id]="busca_palavra_chave"
+            id="busca_palavra_chave"
             placeholder="Busque por nome, palavra-chave ou tema..."
             formControlName="busca_palavra_chave"
             name="busca_palavra_chave"
@@ -131,23 +131,24 @@
       @for (docente of docentesPaginados(); track docente.id) {
       <div class="docente-card-compact">
         <div class="docente-avatar-compact">
-          @if (docente.foto) {
-          <img [src]="docente.foto" [alt]="docente.nome" />
-          } @else {
           <div class="avatar-placeholder-compact">
-            {{ docente.nome.charAt(0) }}
+            {{ getPrimeiraLetra(docente.nome) }}
           </div>
-          }
         </div>
 
         <div class="docente-info-compact">
           <h3>{{ docente.nome }}</h3>
           <p class="campus-info">{{ getCampusLabel(docente.campus) }}</p>
-          <p class="area-info">{{ getAreaLabel(docente.areaAtuacao) }}</p>
+          <p class="area-info">{{ getAreaLabel(docente.palavras_chave) }}</p>
         </div>
 
         <div class="docente-acao-compact">
-          <button z-button zType="default" class="btn-ver-perfil">
+          <button
+            z-button
+            zType="default"
+            class="btn-ver-perfil"
+            (click)="verPerfil(docente.id)"
+          >
             Ver Perfil
           </button>
         </div>
@@ -156,22 +157,49 @@
     </div>
 
     <!-- Paginação -->
+    <!-- Paginação -->
+    <!-- Paginação -->
     @if (totalPaginas() > 1) {
-    <div class="paginacao">
+    <div class="pagination">
+      <!-- Botão Primeira Página -->
       <button
-        class="btn-paginacao"
+        (click)="irParaPrimeiraPagina()"
+        [disabled]="paginaAtual() === 1"
+        class="pagination-btn"
+      >
+        « Primeira
+      </button>
+
+      <!-- Botão Anterior -->
+      <button
         (click)="paginaAnterior()"
         [disabled]="paginaAtual() === 1"
+        class="pagination-btn"
       >
-        &lt;
+        ‹ Anterior
       </button>
-      <span class="pagina-atual">{{ paginaAtual() }}</span>
+
+      <!-- Número da página atual -->
+      <span class="page-info"
+        >Página {{ paginaAtual() }} de {{ totalPaginas() }}</span
+      >
+
+      <!-- Botão Próxima -->
       <button
-        class="btn-paginacao"
         (click)="proximaPagina()"
         [disabled]="paginaAtual() === totalPaginas()"
+        class="pagination-btn"
       >
-        &gt;
+        Próxima ›
+      </button>
+
+      <!-- Botão Última Página -->
+      <button
+        (click)="irParaUltimaPagina()"
+        [disabled]="paginaAtual() === totalPaginas()"
+        class="pagination-btn"
+      >
+        Última »
       </button>
     </div>
     }
