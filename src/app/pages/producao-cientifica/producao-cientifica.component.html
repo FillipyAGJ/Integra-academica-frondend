@@ -1,1 +1,140 @@
-<p>producao-cientifica works!</p>,
+<!-- Loading -->
+<div *ngIf="carregando" class="loading">
+  <div class="spinner"></div>
+  <p>Carregando dados...</p>
+</div>
+
+<!-- Conteúdo -->
+<div *ngIf="!carregando" class="container">
+  <!-- Header -->
+  <!-- <header class="header">
+    <div class="logo">Integra Acadêmica</div>
+    <nav class="nav">
+      <a routerLink="/inicio">Início</a>
+      <a routerLink="/buscar-docentes">Buscar Docentes</a>
+      <a routerLink="/producao-cientifica" class="active">Produção Científica</a>
+      <a routerLink="/temas">Temas</a>
+    </nav>
+  </header> -->
+
+  <!-- Título -->
+  <div class="page-title">
+    <h1>📊 Produção Científica do IFB</h1>
+    <p>Análise e visualização dos dados acadêmicos dos docentes</p>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filters">
+    <div class="filter-group">
+      <label for="campus">Campus:</label>
+      <select id="campus" [(ngModel)]="filtros.campus" (change)="aplicarFiltros()">
+        <option value="todos">Todos</option>
+        <option value="brasilia">Campus Brasília</option>
+        <option value="ceilandia">Campus Ceilândia</option>
+        <option value="recanto">Campus Recanto das Emas</option>
+      </select>
+    </div>
+    
+    <div class="filter-group">
+      <label for="periodo">Período:</label>
+      <input id="periodo" type="range" min="2015" max="2024" [(ngModel)]="filtros.anoInicio" (change)="aplicarFiltros()">
+      <span>{{filtros.anoInicio}} - 2024</span>
+    </div>
+  </div>
+
+  <!-- Gráfico Principal - Evolução Temporal -->
+  <div class="chart-container">
+    <h2>📈 Evolução Temporal</h2>
+    <div class="chart-wrapper">
+    <canvas id="evolutionChart"></canvas>
+  </div>
+
+  <!-- Cards de Informações -->
+  <div class="info-cards">
+    <!-- Top 10 Produtores -->
+    <div class="card">
+      <h3>🏆 Top 10 Produtores</h3>
+      <div class="ranking-list">
+        <div class="ranking-item" *ngFor="let docente of top10Produtores; let i = index">
+          <span class="rank">{{i + 1}}.</span>
+          <span class="name">{{docente.nome}}</span>
+          <span class="count">{{docente.total}}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Colaborações Externas -->
+    <div class="card">
+      <h3>🌍 Colaborações Externas</h3>
+      <div class="collab-list">
+        <div class="collab-item" *ngFor="let inst of colaboracoesExternas">
+          <span class="inst-name">{{inst.nome}}</span>
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="inst.percentual"></div>
+          </div>
+          <span class="inst-count">{{inst.total}}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Áreas Mais Ativas -->
+    <div class="card">
+      <h3>📊 Áreas Mais Ativas</h3>
+      <div class="areas-list">
+        <div class="area-item" *ngFor="let area of areasMaisAtivas">
+          <span class="area-name">{{area.nome}}</span>
+          <span class="area-badge">{{area.total}}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Heatmap -->
+  <div class="chart-container">
+    <h2>🔥 Produção por Campus x Ano</h2>
+    <div class="heatmap">
+      <div class="heatmap-row" *ngFor="let campus of heatmapData">
+        <div class="heatmap-label">{{campus.campus}}</div>
+        <div class="heatmap-cells">
+          <div 
+            class="heatmap-cell" 
+            *ngFor="let valor of campus.valores"
+            [style.background-color]="getHeatmapColor(valor)"
+            [title]="valor + ' publicações'">
+            {{valor}}
+          </div>
+        </div>
+      </div>
+      <div class="heatmap-years">
+        <span *ngFor="let ano of anos">{{ano}}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-cards">
+    <div class="kpi-card">
+      <div class="kpi-icon">🎯</div>
+      <div class="kpi-content">
+        <div class="kpi-label">Índice de Colaboração</div>
+        <div class="kpi-value">{{kpis.indiceColaboracao}} <span>autores/artigo</span></div>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon">📈</div>
+      <div class="kpi-content">
+        <div class="kpi-label">Crescimento Anual</div>
+        <div class="kpi-value">{{kpis.crescimentoAnual > 0 ? '+' : ''}}{{kpis.crescimentoAnual}}% <span>vs ano anterior</span></div>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon">🌐</div>
+      <div class="kpi-content">
+        <div class="kpi-label">Interdisciplinaridade</div>
+        <div class="kpi-value">{{kpis.interdisciplinaridade}}% <span>dos docentes</span></div>
+      </div>
+    </div>
+  </div>
+</div>
