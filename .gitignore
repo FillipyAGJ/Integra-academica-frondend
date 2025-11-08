@@ -11,7 +11,9 @@
 npm-debug.log
 yarn-error.log
 
- public/assets/todos/
+# Ignorar CSVs gerados na pasta public/assets/todos
+public/assets/todos/
+
 
 # IDEs and editors
 .idea/
