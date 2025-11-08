@@ -29,13 +29,15 @@
     "ngx-echarts": "^20.0.2",
     "rxjs": "~7.8.0",
     "tailwind-merge": "^3.3.1",
-    "tslib": "^2.3.0"
+    "tslib": "^2.3.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@angular/build": "^20.3.6",
     "@angular/cli": "^20.3.6",
     "@angular/compiler-cli": "^20.3.0",
     "@tailwindcss/postcss": "^4.1.14",
+    "@types/chart.js": "^2.9.41",
     "@types/jasmine": "~5.1.0",
     "angular-eslint": "20.4.0",
     "eslint": "^9.37.0",

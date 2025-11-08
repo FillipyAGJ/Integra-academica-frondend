@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Docente, DocentesService, DocenteCompleto } from 'src/app/core/services/docentes.service';
 
+
 interface ProducaoCientifica {
   ano: number;
   quantidade: number;
@@ -32,203 +33,148 @@ export class PerfilDocenteComponent implements OnInit {
   loading = signal(true);
 
   producaoCientifica = signal<ProducaoCientifica[]>([]);
+  producaoCientificaCompleta = signal<ProducaoCientifica[]>([]); // NOVO
   distribuicaoProducao = signal<DistribuicaoProducao[]>([]);
   crescimentoAnual = signal<string>('0%');
 
-  primeiraLetra = computed(() => {
-    const nome = this.docente()?.nome;
-    return nome?.charAt(0).toUpperCase() || '?';
+  // Controle do modal
+  modalAberto = signal(false);
+  modalGraficoAberto = signal(false); // NOVO
+
+  // Tooltip do gráfico
+  tooltipVisivel = signal(false);
+  tooltipX = signal(0);
+  tooltipY = signal(0);
+  tooltipAno = signal(0);
+  tooltipQuantidade = signal(0);
+
+  tooltipPizzaVisivel = signal(false);
+  tooltipPizzaX = signal(0);
+  tooltipPizzaY = signal(0);
+  tooltipPizzaTipo = signal('');
+  tooltipPizzaQuantidade = signal(0);
+  tooltipPizzaPercentual = signal(0);
+
+  exportando = signal<boolean>(false);
+
+  // Computed signals para os gráficos
+  pontos = computed(() => {
+    const dados = this.producaoCientifica();
+    if (dados.length === 0) return [];
+
+    const escala = this.escalaY();
+    if (escala.length === 0) return [];
+
+    const maxEscala = escala[escala.length - 1].valor;
+
+    const largura = 500;
+    const altura = 150;
+    const paddingY = 10;
+    const paddingX = 0;
+
+    // Distribuir os pontos uniformemente no eixo X
+    const espacamento = dados.length > 1 ? (largura - 2 * paddingX) / (dados.length - 1) : largura / 2;
+
+    return dados.map((d, i) => {
+      // Calcular Y baseado na escala
+      // Se maxEscala = 0, colocar no meio
+      const proporcao = maxEscala > 0 ? d.quantidade / maxEscala : 0.5;
+
+      // Y vai de (altura - paddingY) quando quantidade=0 até paddingY quando quantidade=maxEscala
+      const y = (altura - paddingY) - (proporcao * (altura - 2 * paddingY));
+
+      return {
+        x: paddingX + (i * espacamento),
+        y: y,
+        ano: d.ano,
+        quantidade: d.quantidade
+      };
+    });
   });
 
-  ngOnInit(): void {
-    const docenteId = this.route.snapshot.paramMap.get('id');
-    if (docenteId) {
-      this.carregarDocente(docenteId);
-    }
-  }
+  pontosString = computed(() => {
+    return this.pontos().map(p => `${p.x},${p.y}`).join(' ');
+  });
 
-  carregarDocente(id: string): void {
-    this.loading.set(true);
-    const idNumerico = Number(id);
-
-    this.docentesService.carregarTodosDados().subscribe({
-      next: () => {
-        const docente = this.docentesService.getDocentes().find(d => d.id === idNumerico);
-        const docenteCompleto = this.docentesService.getDocenteCompleto(idNumerico);
-
-        if (docente && docenteCompleto) {
-          this.docente.set(docente);
-          this.docenteCompleto.set(docenteCompleto);
-          this.calcularProducaoCientifica(docenteCompleto);
-          this.calcularDistribuicao(docenteCompleto);
-          this.calcularCrescimento(docenteCompleto);
-        } else {
-          this.router.navigate(['/buscar-docentes']);
-        }
-        this.loading.set(false);
-      },
-      error: (err) => {
-        console.error('Erro ao carregar docente:', err);
-        this.loading.set(false);
-        this.router.navigate(['/buscar-docentes']);
-      }
-    });
-  }
-
-  calcularProducaoCientifica(docenteCompleto: DocenteCompleto): void {
-    const producaoPorAno = new Map<number, number>();
-    const anoAtual = new Date().getFullYear();
-    const anos = [anoAtual - 4, anoAtual - 3, anoAtual - 2, anoAtual - 1, anoAtual];
-
-    // Inicializar anos
-    anos.forEach(ano => producaoPorAno.set(ano, 0));
-
-    // Contar artigos
-    docenteCompleto.artigos.forEach(artigo => {
-      if (artigo.artigo_ano && anos.includes(artigo.artigo_ano)) {
-        producaoPorAno.set(artigo.artigo_ano, (producaoPorAno.get(artigo.artigo_ano) || 0) + 1);
-      }
-    });
-
-    // Contar trabalhos em eventos
-    docenteCompleto.trabalhos_eventos.forEach(trabalho => {
-      if (trabalho.ano && anos.includes(trabalho.ano)) {
-        producaoPorAno.set(trabalho.ano, (producaoPorAno.get(trabalho.ano) || 0) + 1);
-      }
-    });
-
-    const producao = anos.map(ano => ({
-      ano,
-      quantidade: producaoPorAno.get(ano) || 0
-    }));
-
-    this.producaoCientifica.set(producao);
-  }
-
-  calcularDistribuicao(docenteCompleto: DocenteCompleto): void {
-    const totalArtigos = docenteCompleto.artigos.length;
-    const totalTrabalhos = docenteCompleto.trabalhos_eventos.length;
-    const totalOrientacoes = docenteCompleto.orientacoes.length;
-    const totalProjetos = docenteCompleto.projetos.length;
-
-    const total = totalArtigos + totalTrabalhos + totalOrientacoes + totalProjetos;
-
-    if (total === 0) {
-      this.distribuicaoProducao.set([
-        { tipo: 'Artigos', quantidade: 0, percentual: 25, cor: '#0096c7' },
-        { tipo: 'Trabalhos', quantidade: 0, percentual: 25, cor: '#90e0ef' },
-        { tipo: 'Orientações', quantidade: 0, percentual: 25, cor: '#023e8a' },
-        { tipo: 'Projetos', quantidade: 0, percentual: 25, cor: '#48cae4' }
-      ]);
-      return;
-    }
-
-    this.distribuicaoProducao.set([
-      {
-        tipo: 'Artigos',
-        quantidade: totalArtigos,
-        percentual: (totalArtigos / total) * 100,
-        cor: '#0096c7'
-      },
-      {
-        tipo: 'Trabalhos',
-        quantidade: totalTrabalhos,
-        percentual: (totalTrabalhos / total) * 100,
-        cor: '#90e0ef'
-      },
-      {
-        tipo: 'Orientações',
-        quantidade: totalOrientacoes,
-        percentual: (totalOrientacoes / total) * 100,
-        cor: '#023e8a'
-      },
-      {
-        tipo: 'Projetos',
-        quantidade: totalProjetos,
-        percentual: (totalProjetos / total) * 100,
-        cor: '#48cae4'
-      }
-    ]);
-  }
-
-  calcularCrescimento(docenteCompleto: DocenteCompleto): void {
-    const anoAtual = new Date().getFullYear();
-    const anoAnterior = anoAtual - 1;
-
-    const producaoAtual =
-      docenteCompleto.artigos.filter(a => a.artigo_ano === anoAtual).length +
-      docenteCompleto.trabalhos_eventos.filter(t => t.ano === anoAtual).length;
-
-    const producaoAnterior =
-      docenteCompleto.artigos.filter(a => a.artigo_ano === anoAnterior).length +
-      docenteCompleto.trabalhos_eventos.filter(t => t.ano === anoAnterior).length;
-
-    if (producaoAnterior === 0) {
-      this.crescimentoAnual.set(producaoAtual > 0 ? '+100%' : '0%');
-      return;
-    }
-
-    const crescimento = ((producaoAtual - producaoAnterior) / producaoAnterior) * 100;
-    const sinal = crescimento >= 0 ? '+' : '';
-    this.crescimentoAnual.set(`${sinal}${Math.round(crescimento)}%`);
-  }
-
-  voltar(): void {
-    const sigla = this.route.snapshot.paramMap.get('sigla');
-    this.router.navigate(['/dashboard', sigla, 'busca-docentes']);
-  }
-
-  exportarPerfil(): void {
-    console.log('Exportar perfil do docente:', this.docente());
-    alert('Funcionalidade de exportação em desenvolvimento');
-  }
-
-  getPalavrasChave(): string[] {
-    const palavrasChave = this.docente()?.palavras_chave;
-    if (!palavrasChave) return [];
-    return palavrasChave
-      .replace(/&[#\w]+;/g, '')
-      .split(',')
-      .map(p => p.trim())
-      .filter(p => p.length > 2)
-      .slice(0, 15);
-  }
-
-  // Gera o path SVG para o gráfico de linha com curva suave
-  criarPathLinha(): string {
+  // Escala Y para o gráfico
+  escalaY = computed(() => {
     const producao = this.producaoCientifica();
-    if (producao.length === 0) return '';
+    if (!producao || producao.length === 0) return [];
 
-    const pontos = producao.map((item, index) => {
-      const x = 50 + (index * 90);
-      const y = 130 - (item.quantidade * 6);
-      return { x, y };
+    const maxQuantidade = Math.max(...producao.map(p => p.quantidade), 1);
+
+    // Arredondar para cima para ter um valor "bonito"
+    const maxEscala = Math.ceil(maxQuantidade / 5) * 5;
+    const step = maxEscala / 5;
+
+    // Criar 6 níveis (0 a maxEscala)
+    return Array.from({ length: 6 }, (_, i) => {
+      const valor = Math.round(i * step);
+      // Calcular Y proporcional à altura do SVG (150px)
+      // 0 fica em y=150 (embaixo), maxEscala fica em y=0 (em cima)
+      const y = 150 - (i * 30); // 150 / 5 = 30px por nível
+
+      return {
+        valor,
+        y
+      };
     });
+  });
 
-    let path = `M ${pontos[0].x},${pontos[0].y}`;
+  // NOVO - Computed para o gráfico completo (modal)
+  pontosCompletos = computed(() => {
+    const dados = this.producaoCientificaCompleta();
+    if (dados.length === 0) return [];
 
-    for (let i = 1; i < pontos.length; i++) {
-      const prev = pontos[i - 1];
-      const curr = pontos[i];
-      const cpx = (prev.x + curr.x) / 2;
+    const escala = this.escalaYCompleta();
+    if (escala.length === 0) return [];
 
-      path += ` Q ${cpx},${prev.y} ${cpx},${(prev.y + curr.y) / 2}`;
-      path += ` Q ${cpx},${curr.y} ${curr.x},${curr.y}`;
-    }
+    const maxEscala = escala[escala.length - 1].valor;
 
-    return path;
-  }
+    const largura = 900;
+    const altura = 300;
+    const paddingY = 10;
+    const paddingX = 0;
 
-  // eslint-disable-next-line @typescript-eslint/array-type
-  getPontos(): Array<{ x: number, y: number }> {
-    return this.producaoCientifica().map((item, index) => ({
-      x: 50 + (index * 90),
-      y: 130 - (item.quantidade * 6)
-    }));
-  }
+    const espacamento = dados.length > 1 ? (largura - 2 * paddingX) / (dados.length - 1) : largura / 2;
 
-  // eslint-disable-next-line @typescript-eslint/array-type
-  criarFatiasPizza(): Array<{ d: string, fill: string }> {
+    return dados.map((d, i) => {
+      const proporcao = maxEscala > 0 ? d.quantidade / maxEscala : 0.5;
+      const y = (altura - paddingY) - (proporcao * (altura - 2 * paddingY));
+
+      return {
+        x: paddingX + (i * espacamento),
+        y: y,
+        ano: d.ano,
+        quantidade: d.quantidade
+      };
+    });
+  });
+
+  pontosCompletosString = computed(() => {
+    return this.pontosCompletos().map(p => `${p.x},${p.y}`).join(' ');
+  });
+
+  escalaYCompleta = computed(() => {
+    const producao = this.producaoCientificaCompleta();
+    if (!producao || producao.length === 0) return [];
+
+    const maxQuantidade = Math.max(...producao.map(p => p.quantidade), 1);
+    const maxEscala = Math.ceil(maxQuantidade / 5) * 5;
+    const step = maxEscala / 5;
+
+    return Array.from({ length: 6 }, (_, i) => {
+      const valor = Math.round(i * step);
+      const y = 300 - (i * 60); // 300 / 5 = 60px por nível
+
+      return {
+        valor,
+        y
+      };
+    });
+  });
+
+  fatiasPizza = computed(() => {
     const distribuicao = this.distribuicaoProducao();
     if (distribuicao.length === 0) return [];
 
@@ -255,7 +201,629 @@ export class PerfilDocenteComponent implements OnInit {
 
       anguloAtual = anguloFim;
 
-      return { d, fill: item.cor };
+      return {
+        d,
+        fill: item.cor,
+        tipo: item.tipo,
+        quantidade: item.quantidade,
+        percentual: item.percentual
+      };
     });
+  });
+
+  mostrarTooltipPizza(event: MouseEvent, tipo: string, quantidade: number, percentual: number): void {
+    const svg = (event.target as SVGElement).closest('.grafico-pizza');
+    if (!svg) return;
+
+    const rect = svg.getBoundingClientRect();
+    this.tooltipPizzaX.set(event.clientX - rect.left + 10);
+    this.tooltipPizzaY.set(event.clientY - rect.top - 10);
+    this.tooltipPizzaTipo.set(tipo);
+    this.tooltipPizzaQuantidade.set(quantidade);
+    this.tooltipPizzaPercentual.set(Math.round(percentual * 10) / 10);
+    this.tooltipPizzaVisivel.set(true);
+  }
+
+  esconderTooltipPizza(): void {
+    this.tooltipPizzaVisivel.set(false);
+  }
+
+  palavrasChave = computed(() => {
+    const palavrasChave = this.docente()?.palavras_chave;
+    if (!palavrasChave) return [];
+    return palavrasChave
+      .replace(/&[#\w]+;/g, '')
+      .split(',')
+      .map(p => p.trim())
+      .filter(p => p.length > 2)
+      .slice(0, 15);
+  });
+
+  primeiraLetra = computed(() => {
+    const nome = this.docente()?.nome;
+    return nome?.charAt(0).toUpperCase() || '?';
+  });
+
+  ngOnInit(): void {
+    const docenteId = this.route.snapshot.paramMap.get('id');
+    if (docenteId) {
+      this.carregarDocente(docenteId);
+    }
+  }
+
+  carregarDocente(id: string): void {
+    this.loading.set(true);
+    const idNumerico = Number(id);
+
+    this.docentesService.carregarTodosDados().subscribe({
+      next: () => {
+        const docente = this.docentesService.getDocentes().find(d => d.id === idNumerico);
+        const docenteCompleto = this.docentesService.getDocenteCompleto(idNumerico);
+
+        if (docente && docenteCompleto) {
+          this.docente.set(docente);
+          this.docenteCompleto.set(docenteCompleto);
+          this.calcularProducaoCientifica(docenteCompleto);
+          this.calcularProducaoCientificaCompleta(docenteCompleto); // NOVO
+          this.calcularDistribuicao(docenteCompleto);
+          this.calcularCrescimento(docenteCompleto);
+        } else {
+          this.router.navigate(['/buscar-docentes']);
+        }
+        this.loading.set(false);
+      },
+      error: (err) => {
+        console.error('Erro ao carregar docente:', err);
+        this.loading.set(false);
+        this.router.navigate(['/buscar-docentes']);
+      }
+    });
+  }
+
+  calcularProducaoCientifica(docenteCompleto: DocenteCompleto): void {
+    const producaoPorAno = new Map<number, number>();
+
+    // Coletar TODOS os anos com produção
+    const todosAnos = new Set<number>();
+
+    // Adicionar anos dos artigos
+    docenteCompleto.artigos.forEach(artigo => {
+      let ano: number | null = null;
+      if (typeof artigo.artigo_ano === 'number') {
+        ano = artigo.artigo_ano;
+      } else if (typeof artigo.artigo_ano === 'string') {
+        const anoStr = String(artigo.artigo_ano);
+        ano = parseInt(anoStr.trim(), 10);
+      }
+      if (ano && !isNaN(ano) && ano > 1900 && ano <= 2025) {
+        todosAnos.add(ano);
+      }
+    });
+
+    // Adicionar anos dos trabalhos
+    docenteCompleto.trabalhos_eventos.forEach(trabalho => {
+      let ano: number | null = null;
+      if (typeof trabalho.ano === 'number') {
+        ano = trabalho.ano;
+      } else if (typeof trabalho.ano === 'string') {
+        const anoStr = String(trabalho.ano);
+        ano = parseInt(anoStr.trim(), 10);
+      }
+      if (ano && !isNaN(ano) && ano > 1900 && ano <= 2025) {
+        todosAnos.add(ano);
+      }
+    });
+
+    // Se não houver anos, usar os últimos 5 anos
+    const anoAtual = new Date().getFullYear();
+    if (todosAnos.size === 0) {
+      for (let i = 4; i >= 0; i--) {
+        todosAnos.add(anoAtual - i);
+      }
+    }
+
+    // Pegar apenas os últimos 5 anos com produção (ou os 5 mais recentes)
+    const anosOrdenados = Array.from(todosAnos).sort((a, b) => a - b);
+    const anos = anosOrdenados.slice(-5); // Últimos 5 anos
+
+    console.log('📅 Anos selecionados:', anos);
+
+    // Inicializar anos com zero
+    anos.forEach(ano => producaoPorAno.set(ano, 0));
+
+    // Contar artigos
+    docenteCompleto.artigos.forEach(artigo => {
+      let ano: number | null = null;
+      if (typeof artigo.artigo_ano === 'number') {
+        ano = artigo.artigo_ano;
+      } else if (typeof artigo.artigo_ano === 'string') {
+        const anoStr = String(artigo.artigo_ano);
+        ano = parseInt(anoStr.trim(), 10);
+      }
+
+      if (ano && !isNaN(ano) && anos.includes(ano)) {
+        producaoPorAno.set(ano, (producaoPorAno.get(ano) || 0) + 1);
+      }
+    });
+
+    // Contar trabalhos
+    docenteCompleto.trabalhos_eventos.forEach(trabalho => {
+      let ano: number | null = null;
+      if (typeof trabalho.ano === 'number') {
+        ano = trabalho.ano;
+      } else if (typeof trabalho.ano === 'string') {
+        const anoStr = String(trabalho.ano);
+        ano = parseInt(anoStr.trim(), 10);
+      }
+
+      if (ano && !isNaN(ano) && anos.includes(ano)) {
+        producaoPorAno.set(ano, (producaoPorAno.get(ano) || 0) + 1);
+      }
+    });
+
+    const producao = anos.map(ano => ({
+      ano,
+      quantidade: producaoPorAno.get(ano) || 0
+    }));
+
+    console.log('📊 Produção final por ano:', producao);
+    this.producaoCientifica.set(producao);
+  }
+
+  // NOVO - Calcular produção completa (todos os anos)
+  calcularProducaoCientificaCompleta(docenteCompleto: DocenteCompleto): void {
+    const producaoPorAno = new Map<number, number>();
+    const todosAnos = new Set<number>();
+
+    // Adicionar anos dos artigos
+    docenteCompleto.artigos.forEach(artigo => {
+      let ano: number | null = null;
+      if (typeof artigo.artigo_ano === 'number') {
+        ano = artigo.artigo_ano;
+      } else if (typeof artigo.artigo_ano === 'string') {
+        const anoStr = String(artigo.artigo_ano);
+        ano = parseInt(anoStr.trim(), 10);
+      }
+      if (ano && !isNaN(ano) && ano > 1900 && ano <= 2025) {
+        todosAnos.add(ano);
+      }
+    });
+
+    // Adicionar anos dos trabalhos
+    docenteCompleto.trabalhos_eventos.forEach(trabalho => {
+      let ano: number | null = null;
+      if (typeof trabalho.ano === 'number') {
+        ano = trabalho.ano;
+      } else if (typeof trabalho.ano === 'string') {
+        const anoStr = String(trabalho.ano);
+        ano = parseInt(anoStr.trim(), 10);
+      }
+      if (ano && !isNaN(ano) && ano > 1900 && ano <= 2025) {
+        todosAnos.add(ano);
+      }
+    });
+
+    if (todosAnos.size === 0) {
+      this.producaoCientificaCompleta.set([]);
+      return;
+    }
+
+    // Pegar TODOS os anos
+    const anosOrdenados = Array.from(todosAnos).sort((a, b) => a - b);
+
+    // Inicializar anos com zero
+    anosOrdenados.forEach(ano => producaoPorAno.set(ano, 0));
+
+    // Contar artigos
+    docenteCompleto.artigos.forEach(artigo => {
+      let ano: number | null = null;
+      if (typeof artigo.artigo_ano === 'number') {
+        ano = artigo.artigo_ano;
+      } else if (typeof artigo.artigo_ano === 'string') {
+        const anoStr = String(artigo.artigo_ano);
+        ano = parseInt(anoStr.trim(), 10);
+      }
+
+      if (ano && !isNaN(ano) && anosOrdenados.includes(ano)) {
+        producaoPorAno.set(ano, (producaoPorAno.get(ano) || 0) + 1);
+      }
+    });
+
+    // Contar trabalhos
+    docenteCompleto.trabalhos_eventos.forEach(trabalho => {
+      let ano: number | null = null;
+      if (typeof trabalho.ano === 'number') {
+        ano = trabalho.ano;
+      } else if (typeof trabalho.ano === 'string') {
+        const anoStr = String(trabalho.ano);
+        ano = parseInt(anoStr.trim(), 10);
+      }
+
+      if (ano && !isNaN(ano) && anosOrdenados.includes(ano)) {
+        producaoPorAno.set(ano, (producaoPorAno.get(ano) || 0) + 1);
+      }
+    });
+
+    const producao = anosOrdenados.map(ano => ({
+      ano,
+      quantidade: producaoPorAno.get(ano) || 0
+    }));
+
+    console.log('📊 Produção completa por ano:', producao);
+    this.producaoCientificaCompleta.set(producao);
+  }
+
+  calcularDistribuicao(docenteCompleto: DocenteCompleto): void {
+    // Pegar os últimos 5 anos com produção
+    const todosAnos = new Set<number>();
+
+    docenteCompleto.artigos.forEach(a => {
+      let ano: number | null = null;
+      if (typeof a.artigo_ano === 'number') ano = a.artigo_ano;
+      else if (typeof a.artigo_ano === 'string') {
+        const anoStr = String(a.artigo_ano);
+        ano = parseInt(anoStr.trim(), 10);
+      }
+      if (ano && !isNaN(ano)) todosAnos.add(ano);
+    });
+
+    docenteCompleto.trabalhos_eventos.forEach(t => {
+      let ano: number | null = null;
+      if (typeof t.ano === 'number') ano = t.ano;
+      else if (typeof t.ano === 'string') {
+        const anoStr = String(t.ano);
+        ano = parseInt(anoStr.trim(), 10);
+      }
+      if (ano && !isNaN(ano)) todosAnos.add(ano);
+    });
+
+    docenteCompleto.orientacoes.forEach(o => {
+      if (o.ano) todosAnos.add(o.ano);
+    });
+
+    docenteCompleto.projetos.forEach(p => {
+      if (p.ano_inicio) todosAnos.add(p.ano_inicio);
+      if (p.ano_fim) todosAnos.add(p.ano_fim);
+    });
+
+    const anosOrdenados = Array.from(todosAnos).sort((a, b) => a - b);
+    const anoInicio = anosOrdenados.length > 0 ? anosOrdenados[Math.max(0, anosOrdenados.length - 5)] : new Date().getFullYear() - 4;
+    const anoAtual = new Date().getFullYear();
+
+    console.log('📅 Período de análise:', { anoInicio, anoAtual });
+
+    let totalArtigos = 0;
+    let totalTrabalhos = 0;
+    let totalOrientacoes = 0;
+    let totalProjetos = 0;
+
+    // Contar artigos
+    totalArtigos = docenteCompleto.artigos.filter(a => {
+      let ano: number | null = null;
+      if (typeof a.artigo_ano === 'number') {
+        ano = a.artigo_ano;
+      } else if (typeof a.artigo_ano === 'string') {
+        const anoStr = String(a.artigo_ano);
+        ano = parseInt(anoStr.trim(), 10);
+      }
+      return ano && !isNaN(ano) && ano >= anoInicio && ano <= anoAtual;
+    }).length;
+
+    // Contar trabalhos
+    totalTrabalhos = docenteCompleto.trabalhos_eventos.filter(t => {
+      let ano: number | null = null;
+      if (typeof t.ano === 'number') {
+        ano = t.ano;
+      } else if (typeof t.ano === 'string') {
+        const anoStr = String(t.ano);
+        ano = parseInt(anoStr.trim(), 10);
+      }
+      return ano && !isNaN(ano) && ano >= anoInicio && ano <= anoAtual;
+    }).length;
+
+    // Contar orientações
+    totalOrientacoes = docenteCompleto.orientacoes.filter(o => {
+      const ano = o.ano;
+      return ano && ano >= anoInicio && ano <= anoAtual;
+    }).length;
+
+    // Contar projetos
+    totalProjetos = docenteCompleto.projetos.filter(p => {
+      const anoInicioProjeto = p.ano_inicio;
+      const anoFimProjeto = p.ano_fim || anoAtual;
+      return anoInicioProjeto && (
+        (anoInicioProjeto >= anoInicio && anoInicioProjeto <= anoAtual) ||
+        (anoFimProjeto >= anoInicio && anoFimProjeto <= anoAtual) ||
+        (anoInicioProjeto <= anoInicio && anoFimProjeto >= anoAtual)
+      );
+    }).length;
+
+    const total = totalArtigos + totalTrabalhos + totalOrientacoes + totalProjetos;
+
+    console.log('📊 TOTAIS CALCULADOS:', {
+      totalArtigos,
+      totalTrabalhos,
+      totalOrientacoes,
+      totalProjetos,
+      total
+    });
+
+    if (total === 0) {
+      console.warn('⚠️ Total é ZERO - usando valores padrão');
+      this.distribuicaoProducao.set([
+        { tipo: 'Artigos', quantidade: 0, percentual: 25, cor: '#0096c7' },
+        { tipo: 'Trabalhos', quantidade: 0, percentual: 25, cor: '#90e0ef' },
+        { tipo: 'Orientações', quantidade: 0, percentual: 25, cor: '#023e8a' },
+        { tipo: 'Projetos', quantidade: 0, percentual: 25, cor: '#48cae4' }
+      ]);
+      return;
+    }
+
+    const distribuicao = [
+      {
+        tipo: 'Artigos',
+        quantidade: totalArtigos,
+        percentual: (totalArtigos / total) * 100,
+        cor: '#0096c7'
+      },
+      {
+        tipo: 'Trabalhos',
+        quantidade: totalTrabalhos,
+        percentual: (totalTrabalhos / total) * 100,
+        cor: '#90e0ef'
+      },
+      {
+        tipo: 'Orientações',
+        quantidade: totalOrientacoes,
+        percentual: (totalOrientacoes / total) * 100,
+        cor: '#023e8a'
+      },
+      {
+        tipo: 'Projetos',
+        quantidade: totalProjetos,
+        percentual: (totalProjetos / total) * 100,
+        cor: '#48cae4'
+      }
+    ];
+
+    console.log('📊 Distribuição final:', distribuicao);
+    this.distribuicaoProducao.set(distribuicao);
+  }
+
+  calcularCrescimento(docenteCompleto: DocenteCompleto): void {
+    // Pegar os 2 anos mais recentes com produção
+    const todosAnos = new Set<number>();
+
+    docenteCompleto.artigos.forEach(a => {
+      let ano: number | null = null;
+      if (typeof a.artigo_ano === 'number') ano = a.artigo_ano;
+      else if (typeof a.artigo_ano === 'string') {
+        const anoStr = String(a.artigo_ano);
+        ano = parseInt(anoStr.trim(), 10);
+      }
+      if (ano && !isNaN(ano)) todosAnos.add(ano);
+    });
+
+    docenteCompleto.trabalhos_eventos.forEach(t => {
+      let ano: number | null = null;
+      if (typeof t.ano === 'number') ano = t.ano;
+      else if (typeof t.ano === 'string') {
+        const anoStr = String(t.ano);
+        ano = parseInt(anoStr.trim(), 10);
+      }
+      if (ano && !isNaN(ano)) todosAnos.add(ano);
+    });
+
+    const anosOrdenados = Array.from(todosAnos).sort((a, b) => b - a);
+    const anoAtual = anosOrdenados[0] || new Date().getFullYear();
+    const anoAnterior = anosOrdenados[1] || anoAtual - 1;
+
+    // Contar produção do ano atual
+    const artigosAtual = docenteCompleto.artigos.filter(a => {
+      let ano: number | null = null;
+      if (typeof a.artigo_ano === 'number') {
+        ano = a.artigo_ano;
+      } else if (typeof a.artigo_ano === 'string') {
+        const anoStr = String(a.artigo_ano);
+        ano = parseInt(anoStr.trim(), 10);
+      }
+      return ano === anoAtual;
+    }).length;
+
+    const trabalhosAtual = docenteCompleto.trabalhos_eventos.filter(t => {
+      let ano: number | null = null;
+      if (typeof t.ano === 'number') {
+        ano = t.ano;
+      } else if (typeof t.ano === 'string') {
+        const anoStr = String(t.ano);
+        ano = parseInt(anoStr.trim(), 10);
+      }
+      return ano === anoAtual;
+    }).length;
+
+    const producaoAtual = artigosAtual + trabalhosAtual;
+
+    // Contar produção do ano anterior
+    const artigosAnterior = docenteCompleto.artigos.filter(a => {
+      let ano: number | null = null;
+      if (typeof a.artigo_ano === 'number') {
+        ano = a.artigo_ano;
+      } else if (typeof a.artigo_ano === 'string') {
+        const anoStr = String(a.artigo_ano);
+        ano = parseInt(anoStr.trim(), 10);
+      }
+      return ano === anoAnterior;
+    }).length;
+
+    const trabalhosAnterior = docenteCompleto.trabalhos_eventos.filter(t => {
+      let ano: number | null = null;
+      if (typeof t.ano === 'number') {
+        ano = t.ano;
+      } else if (typeof t.ano === 'string') {
+        const anoStr = String(t.ano);
+        ano = parseInt(anoStr.trim(), 10);
+      }
+      return ano === anoAnterior;
+    }).length;
+
+    const producaoAnterior = artigosAnterior + trabalhosAnterior;
+
+    console.log('📊 Crescimento:', {
+      anoAtual,
+      producaoAtual,
+      anoAnterior,
+      producaoAnterior
+    });
+
+    if (producaoAnterior === 0) {
+      this.crescimentoAnual.set(producaoAtual > 0 ? '+100%' : '0%');
+      return;
+    }
+
+    const crescimento = ((producaoAtual - producaoAnterior) / producaoAnterior) * 100;
+    const sinal = crescimento >= 0 ? '+' : '';
+    this.crescimentoAnual.set(`${sinal}${Math.round(crescimento)}%`);
+  }
+
+  // Métodos para o tooltip
+  mostrarTooltip(event: MouseEvent, ponto: { x: number; y: number; ano: number; quantidade: number }): void {
+    const svg = (event.target as SVGElement).closest('svg');
+    if (!svg) return;
+
+    const rect = svg.getBoundingClientRect();
+    this.tooltipX.set(event.clientX - rect.left + 10);
+    this.tooltipY.set(event.clientY - rect.top - 10);
+    this.tooltipAno.set(ponto.ano);
+    this.tooltipQuantidade.set(ponto.quantidade);
+    this.tooltipVisivel.set(true);
+  }
+
+  esconderTooltip(): void {
+    this.tooltipVisivel.set(false);
+  }
+
+  // Métodos para o modal
+  abrirModal(): void {
+    this.modalAberto.set(true);
+    document.body.style.overflow = 'hidden';
+  }
+
+  fecharModal(): void {
+    this.modalAberto.set(false);
+    document.body.style.overflow = 'auto';
+  }
+
+  // NOVO - Métodos para o modal do gráfico
+  abrirModalGrafico(): void {
+    this.modalGraficoAberto.set(true);
+    document.body.style.overflow = 'hidden';
+  }
+
+  fecharModalGrafico(): void {
+    this.modalGraficoAberto.set(false);
+    document.body.style.overflow = 'auto';
+  }
+
+  voltar(): void {
+    const sigla = this.route.snapshot.paramMap.get('sigla');
+    this.router.navigate(['/dashboard', sigla, 'busca-docentes']);
+  }
+
+  exportarPerfil() {
+    this.exportando.set(true);
+
+    try {
+      const docente = this.docente();
+      if (!docente) {
+        alert('Nenhum dado de docente disponível para exportar.');
+        this.exportando.set(false);
+        return;
+      }
+
+      // Prepara os dados para CSV com melhor formatação
+      let csvContent = '';
+
+      // ===== SEÇÃO 1: INFORMAÇÕES DO DOCENTE =====
+      csvContent += 'INFORMAÇÕES DO DOCENTE\n';
+      csvContent += 'Campo,Valor\n';
+      csvContent += `Nome,${this.escapeCsv(docente.nome || docente.nome_completo || '')}\n`;
+      csvContent += `Campus,${this.escapeCsv(docente.campus || '')}\n`;
+      csvContent += `Área Principal,${this.escapeCsv(docente.palavras_chave?.split(',')[0] || '')}\n`;
+      csvContent += `Resumo,${this.escapeCsv(docente.resumo || '')}\n`;
+      csvContent += '\n\n';
+
+      // ===== SEÇÃO 2: PALAVRAS-CHAVE DA PESQUISA =====
+      csvContent += 'PALAVRAS-CHAVE DA PESQUISA\n';
+      csvContent += 'Palavra-chave\n';
+      this.palavrasChave().forEach(palavra => {
+        csvContent += `${this.escapeCsv(palavra)}\n`;
+      });
+      csvContent += '\n\n';
+
+      // ===== SEÇÃO 3: EVOLUÇÃO DA PRODUÇÃO CIENTÍFICA =====
+      csvContent += 'EVOLUÇÃO DA PRODUÇÃO CIENTÍFICA\n';
+      csvContent += 'Ano,Quantidade de Publicações\n';
+      this.pontos().forEach(ponto => {
+        csvContent += `${ponto.ano},${ponto.quantidade}\n`;
+      });
+      csvContent += '\n\n';
+
+      // ===== SEÇÃO 4: DISTRIBUIÇÃO POR TIPO DE PRODUÇÃO =====
+      csvContent += 'DISTRIBUIÇÃO POR TIPO DE PRODUÇÃO\n';
+      csvContent += 'Tipo,Quantidade,Percentual\n';
+      this.distribuicaoProducao().forEach(item => {
+        csvContent += `${this.escapeCsv(item.tipo)},${item.quantidade},${item.percentual.toFixed(2)}%\n`;
+      });
+      csvContent += '\n\n';
+
+      // ===== SEÇÃO 5: ÍNDICE DE CRESCIMENTO ANUAL =====
+      csvContent += 'ÍNDICE DE CRESCIMENTO ANUAL\n';
+      csvContent += 'Indicador,Valor\n';
+      csvContent += `Crescimento,${this.crescimentoAnual()}\n`;
+
+      // Cria o arquivo CSV
+      const BOM = '\uFEFF';
+      const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+
+      // Cria link para download
+      const link = document.createElement('a');
+      link.href = url;
+      const nomeArquivo = (docente.nome || docente.nome_completo || 'docente')
+        .replace(/\s+/g, '_')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+      link.download = `perfil_${nomeArquivo}_${new Date().toISOString().split('T')[0]}.csv`;
+
+      // Dispara o download
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Limpa o URL
+      window.URL.revokeObjectURL(url);
+
+      console.log('Perfil exportado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao exportar perfil:', error);
+      alert('Erro ao exportar perfil. Tente novamente.');
+    } finally {
+      this.exportando.set(false);
+    }
+  }
+
+  private escapeCsv(value: string): string {
+    if (!value) return '';
+
+    // Remove quebras de linha e substitui por espaço
+    value = value.replace(/\n/g, ' ').replace(/\r/g, ' ').trim();
+
+    // Se contém vírgula, aspas ou ponto e vírgula, envolve em aspas
+    if (value.includes(',') || value.includes('"') || value.includes(';')) {
+      value = '"' + value.replace(/"/g, '""') + '"';
+    }
+
+    return value;
   }
 }

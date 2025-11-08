@@ -169,12 +169,18 @@ export class DocentesService {
     }
 
     return forkJoin({
-      docentes: this.http.get('assets/1_docentes_resumo.csv', { responseType: 'text' }),
-      formacoes: this.http.get('assets/2_formacao_detalhada.csv', { responseType: 'text' }),
-      artigos: this.http.get('assets/3_artigos_detalhados.csv', { responseType: 'text' }),
-      orientacoes: this.http.get('assets/4_orientacoes_detalhadas.csv', { responseType: 'text' }),
-      projetos: this.http.get('assets/5_projetos_ifb.csv', { responseType: 'text' }),
-      trabalhos: this.http.get('assets/6_trabalhos_eventos_recentes.csv', { responseType: 'text' })
+      // docentes: this.http.get('assets/1_docentes_resumo.csv', { responseType: 'text' }),
+      // formacoes: this.http.get('assets/2_formacao_detalhada.csv', { responseType: 'text' }),
+      // artigos: this.http.get('assets/3_artigos_detalhados.csv', { responseType: 'text' }),
+      // orientacoes: this.http.get('assets/4_orientacoes_detalhadas.csv', { responseType: 'text' }),
+      // projetos: this.http.get('assets/5_projetos_ifb.csv', { responseType: 'text' }),
+      // trabalhos: this.http.get('assets/6_trabalhos_eventos_recentes.csv', { responseType: 'text' })
+      docentes: this.http.get('assets/todos/1_todos_ifs_docentes_resumo.csv', { responseType: 'text' }),
+      formacoes: this.http.get('assets/todos/2_todos_ifs_formacao_detalhada.csv', { responseType: 'text' }),
+      artigos: this.http.get('assets/todos/3_todos_ifs_artigos_detalhados.csv', { responseType: 'text' }),
+      orientacoes: this.http.get('assets/todos/4_todos_ifs_orientacoes_detalhadas.csv', { responseType: 'text' }),
+      projetos: this.http.get('assets/todos/5_todos_ifs_projetos.csv', { responseType: 'text' }),
+      trabalhos: this.http.get('assets/todos/6_todos_ifs_trabalhos_eventos_recentes.csv', { responseType: 'text' })
     }).pipe(
       map(dados => {
         this.docentes = this.parseCSV(dados.docentes);

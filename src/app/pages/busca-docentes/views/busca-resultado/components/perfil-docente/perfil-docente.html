@@ -1,6 +1,7 @@
 <div class="perfil-docente-container">
   @if (loading()) {
   <div class="loading-state">
+    <div class="spinner"></div>
     <p>Carregando perfil...</p>
   </div>
   } @else if (docente()) {
@@ -15,9 +16,17 @@
         <div class="info-texto">
           <h1>{{ docente()?.nome || docente()?.nome_completo }}</h1>
           <p class="campus">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M8 0L0 6v10h16V6L8 0zm0 2.5L13 6v7H3V6l5-3.5z" />
+            </svg>
             {{ docente()?.campus || 'Campus não informado' }}
           </p>
           <p class="areas">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path
+                d="M8 0a8 8 0 100 16A8 8 0 008 0zm0 14.5a6.5 6.5 0 110-13 6.5 6.5 0 010 13z"
+              />
+            </svg>
             {{ docente()?.palavras_chave!.split(',')[0] || 'Área não informada'
             }}
           </p>
@@ -27,78 +36,221 @@
 
     <!-- Resumo/Bio -->
     <div class="secao-card resumo-card">
-      <p>
-        {{ docente()?.resumo || 'Lorem ipsum is simply dummy text of the
-        printing and typesetting industry. Lorem Ipsum has been the industry\'s
-        standard dummy text ever since the 1500s, when an unknown printer took a
-        galley of type and scrambled it to make a type specimen book.' }}
-      </p>
+      <h3>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+          <path
+            fill-rule="evenodd"
+            d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"
+            clip-rule="evenodd"
+          />
+        </svg>
+        Sobre
+      </h3>
+      <p>{{ docente()?.resumo || 'Resumo não disponível.' }}</p>
     </div>
 
     <!-- Grid de gráficos e informações -->
     <div class="graficos-grid">
       <!-- Evolução da Produção Científica -->
       <div class="secao-card grafico-card">
-        <h3>Evolução da Produção Científica</h3>
-        <div class="grafico-linha">
-          <svg viewBox="0 0 300 150" class="linha-svg">
-            <polyline
-              points="20,130 70,110 120,80 170,60 220,40 270,20"
-              fill="none"
-              stroke="#0096c7"
-              stroke-width="3"
+        <h3>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+            <path
+              d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"
             />
-            @for (ponto of producaoCientifica(); track ponto.ano) {
-            <circle
-              [attr.cx]="20 + ($index * 62.5)"
-              [attr.cy]="150 - (ponto.quantidade * 7)"
-              r="4"
-              fill="#0096c7"
-            />
-            }
           </svg>
-          <div class="eixo-x">
-            @for (ponto of producaoCientifica(); track ponto.ano) {
-            <span>{{ ponto.ano }}</span>
-            }
+          Evolução da Produção Científica
+        </h3>
+        <div class="grafico-linha">
+          @if (pontos().length > 0) {
+          <div class="grafico-container">
+            <!-- Eixo Y com escala -->
+            <div class="eixo-y">
+              @for (escala of escalaY(); track escala.valor) {
+              <div class="escala-item">
+                <span class="escala-valor">{{ escala.valor }}</span>
+              </div>
+              }
+            </div>
+
+            <!-- SVG do gráfico -->
+            <div class="grafico-svg-wrapper">
+              <svg
+                viewBox="0 0 500 150"
+                class="linha-svg"
+                preserveAspectRatio="none"
+                role="img"
+                aria-label="Gráfico de evolução da produção científica"
+              >
+                <!-- Linhas de grade horizontais -->
+                @for (escala of escalaY(); track escala.valor) {
+                <line
+                  x1="0"
+                  [attr.y1]="escala.y"
+                  x2="500"
+                  [attr.y2]="escala.y"
+                  stroke="#e2e8f0"
+                  stroke-width="1"
+                  stroke-dasharray="5,5"
+                />
+                }
+
+                <!-- Área preenchida sob a linha -->
+                <defs>
+                  <linearGradient
+                    id="areaGradient"
+                    x1="0%"
+                    y1="0%"
+                    x2="0%"
+                    y2="100%"
+                  >
+                    <stop
+                      offset="0%"
+                      style="stop-color: #0096c7; stop-opacity: 0.3"
+                    />
+                    <stop
+                      offset="100%"
+                      style="stop-color: #0096c7; stop-opacity: 0.05"
+                    />
+                  </linearGradient>
+                </defs>
+                <polygon
+                  [attr.points]="pontosString()"
+                  fill="url(#areaGradient)"
+                />
+
+                <!-- Linha conectando os pontos -->
+                <polyline
+                  [attr.points]="pontosString()"
+                  fill="none"
+                  stroke="#0096c7"
+                  stroke-width="3"
+                  vector-effect="non-scaling-stroke"
+                />
+
+                <!-- Círculos nos pontos -->
+                @for (ponto of pontos(); track $index) {
+                <circle
+                  [attr.cx]="ponto.x"
+                  [attr.cy]="ponto.y"
+                  r="6"
+                  fill="#0096c7"
+                  stroke="white"
+                  stroke-width="2"
+                  (mouseenter)="mostrarTooltip($event, ponto)"
+                  (mouseleave)="esconderTooltip()"
+                  class="ponto-interativo"
+                  [attr.aria-label]="'Ano ' + ponto.ano + ': ' + ponto.quantidade + ' publicações'"
+                  tabindex="0"
+                  vector-effect="non-scaling-stroke"
+                />
+                }
+              </svg>
+
+              <!-- Eixo X com anos -->
+              <div class="eixo-x">
+                @for (ponto of pontos(); track ponto.ano) {
+                <span class="ano-label" [style.left.%]="(ponto.x / 500) * 100">
+                  {{ ponto.ano }}
+                </span>
+                }
+              </div>
+            </div>
           </div>
+
+          <!-- Tooltip -->
+          @if (tooltipVisivel()) {
+          <div
+            class="tooltip-grafico"
+            [style.left.px]="tooltipX()"
+            [style.top.px]="tooltipY()"
+            role="tooltip"
+          >
+            <strong>Ano {{ tooltipAno() }}</strong>
+            <span>{{ tooltipQuantidade() }} publicações</span>
+          </div>
+          } } @else {
+          <p class="sem-dados">
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 48 48"
+              fill="currentColor"
+              opacity="0.3"
+            >
+              <path
+                d="M24 4C12.95 4 4 12.95 4 24s8.95 20 20 20 20-8.95 20-20S35.05 4 24 4zm2 30h-4v-4h4v4zm0-8h-4V14h4v12z"
+              />
+            </svg>
+            Sem dados de produção científica
+          </p>
+          }
         </div>
       </div>
 
       <!-- Distribuição por Produção -->
       <div class="secao-card grafico-card">
-        <h3>Distribuição por Produção</h3>
-        <div class="grafico-pizza">
-          <svg viewBox="0 0 200 200" class="pizza-svg">
-            <circle cx="100" cy="100" r="80" fill="#0096c7" />
-            <circle
-              cx="100"
-              cy="100"
-              r="80"
-              fill="#48cae4"
-              stroke-dasharray="125 377"
-              stroke-dashoffset="0"
-              transform="rotate(-90 100 100)"
-            />
-            <circle
-              cx="100"
-              cy="100"
-              r="80"
-              fill="#023e8a"
-              stroke-dasharray="63 377"
-              stroke-dashoffset="-125"
-              transform="rotate(-90 100 100)"
-            />
-            <circle
-              cx="100"
-              cy="100"
-              r="80"
-              fill="#90e0ef"
-              stroke-dasharray="94 377"
-              stroke-dashoffset="-188"
-              transform="rotate(-90 100 100)"
-            />
+        <h3>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
+            <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
           </svg>
+          Distribuição por Produção
+        </h3>
+        <div class="grafico-pizza">
+          @if (fatiasPizza().length > 0) {
+          <svg
+            viewBox="0 0 200 200"
+            class="pizza-svg"
+            role="img"
+            aria-label="Gráfico de distribuição por tipo de produção"
+          >
+            @for (fatia of fatiasPizza(); track $index) {
+            <path
+              [attr.d]="fatia.d"
+              [attr.fill]="fatia.fill"
+              stroke="white"
+              stroke-width="2"
+              (mouseenter)="mostrarTooltipPizza($event, fatia.tipo, fatia.quantidade, fatia.percentual)"
+              (mouseleave)="esconderTooltipPizza()"
+              class="fatia-interativa"
+              [attr.aria-label]="fatia.tipo + ': ' + fatia.quantidade + ' (' + fatia.percentual + '%)'"
+              tabindex="0"
+            />
+            }
+          </svg>
+
+          <!-- Tooltip do gráfico de pizza -->
+          @if (tooltipPizzaVisivel()) {
+          <div
+            class="tooltip-pizza"
+            [style.left.px]="tooltipPizzaX()"
+            [style.top.px]="tooltipPizzaY()"
+            role="tooltip"
+          >
+            <strong>{{ tooltipPizzaTipo() }}</strong>
+            <span
+              >{{ tooltipPizzaQuantidade() }} ({{ tooltipPizzaPercentual()
+              }}%)</span
+            >
+          </div>
+          } } @else {
+          <p class="sem-dados">
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 48 48"
+              fill="currentColor"
+              opacity="0.3"
+            >
+              <path
+                d="M24 4C12.95 4 4 12.95 4 24s8.95 20 20 20 20-8.95 20-20S35.05 4 24 4zm2 30h-4v-4h4v4zm0-8h-4V14h4v12z"
+              />
+            </svg>
+            Sem dados de distribuição
+          </p>
+          }
         </div>
         <div class="legenda-pizza">
           @for (item of distribuicaoProducao(); track item.tipo) {
@@ -107,7 +259,10 @@
               class="cor-indicador"
               [style.background-color]="item.cor"
             ></span>
-            <span class="legenda-texto">{{ item.tipo }}</span>
+            <span class="legenda-texto">
+              {{ item.tipo }}: <strong>{{ item.quantidade }}</strong> ({{
+              item.percentual.toFixed(1) }}%)
+            </span>
           </div>
           }
         </div>
@@ -115,9 +270,18 @@
 
       <!-- Palavras-chave da pesquisa -->
       <div class="secao-card palavras-card">
-        <h3>O que a Rede Federal de Educação está pesquisando?</h3>
+        <h3>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+            <path
+              fill-rule="evenodd"
+              d="M9.243 3.03a1 1 0 01.727 1.213L9.53 6h2.94l.56-2.243a1 1 0 111.94.486L14.53 6H17a1 1 0 110 2h-2.97l-1 4H15a1 1 0 110 2h-2.47l-.56 2.242a1 1 0 11-1.94-.485L10.47 14H7.53l-.56 2.242a1 1 0 11-1.94-.485L5.47 14H3a1 1 0 110-2h2.97l1-4H5a1 1 0 110-2h2.47l.56-2.243a1 1 0 011.213-.727zM9.03 8l-1 4h2.938l1-4H9.031z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          Palavras-chave da Pesquisa
+        </h3>
         <div class="nuvem-palavras">
-          @for (palavra of getPalavrasChave(); track palavra) {
+          @for (palavra of palavrasChave(); track palavra) {
           <span class="palavra" [style.font-size.px]="14 + ($index % 3) * 6">
             {{ palavra }}
           </span>
@@ -127,20 +291,56 @@
 
       <!-- Índice de Crescimento -->
       <div class="secao-card crescimento-card">
-        <h3>Índice de Crescimento Anual da Produção</h3>
+        <h3>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+            <path
+              fill-rule="evenodd"
+              d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          Índice de Crescimento Anual
+        </h3>
         <div class="crescimento-valor">
-          <span class="percentual">{{ crescimentoAnual() }}</span>
+          <span
+            class="percentual"
+            [class.positivo]="crescimentoAnual().includes('+')"
+            [class.negativo]="crescimentoAnual().includes('-')"
+            [class.neutro]="!crescimentoAnual().includes('+') && !crescimentoAnual().includes('-')"
+          >
+            {{ crescimentoAnual() }}
+          </span>
           <p class="descricao">em relação ao ano anterior</p>
         </div>
       </div>
     </div>
 
-    <!-- Botão Exportar -->
+    <!-- Botões de Ação -->
     <div class="acoes-perfil">
-      <button class="btn-exportar" (click)="exportarPerfil()">
-        Exportar perfil
+      <button
+        class="btn-exportar"
+        (click)="exportarPerfil()"
+        [disabled]="exportando()"
+      >
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+          <path
+            fill-rule="evenodd"
+            d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+            clip-rule="evenodd"
+          />
+        </svg>
+        {{ exportando() ? 'Exportando...' : 'Exportar perfil' }}
       </button>
-      <button class="btn-voltar" (click)="voltar()">Voltar</button>
+      <button class="btn-voltar" (click)="voltar()">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+          <path
+            fill-rule="evenodd"
+            d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+            clip-rule="evenodd"
+          />
+        </svg>
+        Voltar
+      </button>
     </div>
   </div>
   }
