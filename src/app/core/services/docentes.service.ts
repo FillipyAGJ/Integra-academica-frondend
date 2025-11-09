@@ -6,6 +6,7 @@ import { Observable, forkJoin, map } from 'rxjs';
 // Interface existente (mantida)
 export interface Docente {
   id: number;
+  sigla_if: string; // ← ADICIONE ESTA LINHA
   slug: string;
   nome: string;
   campus: string;
@@ -41,6 +42,7 @@ export interface Docente {
 // NOVAS INTERFACES para os outros CSVs
 export interface Formacao {
   docente_id: number;
+  sigla_if: string;
   docente_nome: string;
   docente_campus: string;
   nivel: string;
@@ -60,6 +62,7 @@ export interface Formacao {
 
 export interface Artigo {
   docente_id: number;
+  sigla_if: string;
   docente_nome: string;
   docente_campus: string;
   artigo_titulo: string;
@@ -76,6 +79,7 @@ export interface Artigo {
 
 export interface Orientacao {
   docente_id: number;
+  sigla_if: string;
   docente_nome: string;
   docente_campus: string;
   natureza: string;
@@ -89,6 +93,7 @@ export interface Orientacao {
 
 export interface Projeto {
   docente_id: number;
+  sigla_if: string;
   docente_nome: string;
   docente_campus: string;
   nome_projeto: string;
@@ -104,6 +109,7 @@ export interface Projeto {
 
 export interface TrabalhoEvento {
   docente_id: number;
+  sigla_if: string;
   docente_nome: string;
   docente_campus: string;
   titulo: string;
@@ -169,12 +175,6 @@ export class DocentesService {
     }
 
     return forkJoin({
-      // docentes: this.http.get('assets/1_docentes_resumo.csv', { responseType: 'text' }),
-      // formacoes: this.http.get('assets/2_formacao_detalhada.csv', { responseType: 'text' }),
-      // artigos: this.http.get('assets/3_artigos_detalhados.csv', { responseType: 'text' }),
-      // orientacoes: this.http.get('assets/4_orientacoes_detalhadas.csv', { responseType: 'text' }),
-      // projetos: this.http.get('assets/5_projetos_ifb.csv', { responseType: 'text' }),
-      // trabalhos: this.http.get('assets/6_trabalhos_eventos_recentes.csv', { responseType: 'text' })
       docentes: this.http.get('assets/todos/1_todos_ifs_docentes_resumo.csv', { responseType: 'text' }),
       formacoes: this.http.get('assets/todos/2_todos_ifs_formacao_detalhada.csv', { responseType: 'text' }),
       artigos: this.http.get('assets/todos/3_todos_ifs_artigos_detalhados.csv', { responseType: 'text' }),
@@ -190,6 +190,15 @@ export class DocentesService {
         this.projetos = this.parseCSV(dados.projetos);
         this.trabalhos = this.parseCSV(dados.trabalhos);
         this.dadosCarregados = true;
+
+        // ← ADICIONE ESTES LOGS
+
+        // Verificar quantos IFs diferentes existem
+        const siglasUnicasArtigos = new Set(this.artigos.map(a => a.sigla_if));
+        const siglasUnicasDocentes = new Set(this.docentes.map(d => d.sigla_if));
+        console.log('  - IFs únicos nos artigos:', Array.from(siglasUnicasArtigos));
+        console.log('  - IFs únicos nos docentes:', Array.from(siglasUnicasDocentes));
+
         return true;
       })
     );
@@ -350,37 +359,55 @@ export class DocentesService {
   }
 
   // NOVO: Produção por ano com dados REAIS dos CSVs
-  getProducaoPorAno(docenteId?: number): ProducaoPorAno[] {
-    const artigosFiltered = docenteId
-      ? this.artigos.filter(a => a.docente_id === docenteId)
-      : this.artigos;
+  // ATUALIZAR: Produção por ano COM FILTRO DE IF e FILTRO DE ANO
+  getProducaoPorAno(siglaIF?: string): ProducaoPorAno[] {
 
-    const trabalhosFiltered = docenteId
-      ? this.trabalhos.filter(t => t.docente_id === docenteId)
-      : this.trabalhos;
+    // Usa Map para agregação em uma única passada
+    const producaoPorAno = new Map<number, { artigos: number; orientacoes: number; trabalhos: number }>();
+    const siglaUpper = siglaIF?.toUpperCase();
 
-    const orientacoesFiltered = docenteId
-      ? this.orientacoes.filter(o => o.docente_id === docenteId)
-      : this.orientacoes;
+    // Uma única iteração por array
+    this.artigos.forEach(a => {
+      if (!siglaIF || a.sigla_if?.toUpperCase() === siglaUpper) {
+        const ano = a.artigo_ano;
+        if (!producaoPorAno.has(ano)) {
+          producaoPorAno.set(ano, { artigos: 0, orientacoes: 0, trabalhos: 0 });
+        }
+        producaoPorAno.get(ano)!.artigos++;
+      }
+    });
 
-    // Coleta todos os anos únicos
-    const anos = new Set<number>();
-    artigosFiltered.forEach(a => a.artigo_ano && anos.add(a.artigo_ano));
-    trabalhosFiltered.forEach(t => t.ano && anos.add(t.ano));
-    orientacoesFiltered.forEach(o => o.ano && anos.add(o.ano));
+    this.orientacoes.forEach(o => {
+      if (!siglaIF || o.sigla_if?.toUpperCase() === siglaUpper) {
+        const ano = o.ano;
+        if (!producaoPorAno.has(ano)) {
+          producaoPorAno.set(ano, { artigos: 0, orientacoes: 0, trabalhos: 0 });
+        }
+        producaoPorAno.get(ano)!.orientacoes++;
+      }
+    });
 
-    return Array.from(anos)
-      .sort()
-      .map(ano => ({
+    this.trabalhos.forEach(t => {
+      if (!siglaIF || t.sigla_if?.toUpperCase() === siglaUpper) {
+        const ano = t.ano;
+        if (!producaoPorAno.has(ano)) {
+          producaoPorAno.set(ano, { artigos: 0, orientacoes: 0, trabalhos: 0 });
+        }
+        producaoPorAno.get(ano)!.trabalhos++;
+      }
+    });
+
+    // Converte Map para array e ordena
+    const resultado = Array.from(producaoPorAno.entries())
+      .map(([ano, dados]) => ({
         ano,
-        artigos: artigosFiltered.filter(a => a.artigo_ano === ano).length,
-        trabalhos: trabalhosFiltered.filter(t => t.ano === ano).length,
-        orientacoes: orientacoesFiltered.filter(o => o.ano === ano).length,
-        total:
-          artigosFiltered.filter(a => a.artigo_ano === ano).length +
-          trabalhosFiltered.filter(t => t.ano === ano).length +
-          orientacoesFiltered.filter(o => o.ano === ano).length
-      }));
+        artigos: dados.artigos,
+        orientacoes: dados.orientacoes,
+        trabalhos: dados.trabalhos,
+        total: dados.artigos + dados.orientacoes + dados.trabalhos
+      }))
+      .sort((a, b) => a.ano - b.ano);
+    return resultado;
   }
 
   // Método legado (mantido para compatibilidade)
@@ -408,7 +435,94 @@ export class DocentesService {
         : 0
     };
   }
+
+  // NOVO: Métodos para filtrar por IF
+  getDocentesPorIF(siglaIF: string): Docente[] {
+    const filtrados = this.docentes.filter(d =>
+      d.sigla_if?.toUpperCase() === siglaIF.toUpperCase()
+    );
+    return filtrados;
+  }
+
+  getArtigosPorIF(siglaIF: string, docenteId?: number): Artigo[] {
+    let filtered = this.artigos.filter(a =>
+      a.sigla_if?.toUpperCase() === siglaIF.toUpperCase()
+    );
+
+    if (docenteId) {
+      filtered = filtered.filter(a => a.docente_id === docenteId);
+    }
+
+    return filtered;
+  }
+
+  getOrientacoesPorIF(siglaIF: string, docenteId?: number): Orientacao[] {
+    let filtered = this.orientacoes.filter(o =>
+      o.sigla_if?.toUpperCase() === siglaIF.toUpperCase()
+    );
+
+    if (docenteId) {
+      filtered = filtered.filter(o => o.docente_id === docenteId);
+    }
+
+    return filtered;
+  }
+
+  getProjetosPorIF(siglaIF: string, docenteId?: number): Projeto[] {
+    let filtered = this.projetos.filter(p => p.sigla_if?.toUpperCase() === siglaIF.toUpperCase());
+    if (docenteId) {
+      filtered = filtered.filter(p => p.docente_id === docenteId);
+    }
+    return filtered;
+  }
+
+  getTrabalhosPorIF(siglaIF: string, docenteId?: number): TrabalhoEvento[] {
+    let filtered = this.trabalhos.filter(t =>
+      t.sigla_if?.toUpperCase() === siglaIF.toUpperCase()
+    );
+
+    if (docenteId) {
+      filtered = filtered.filter(t => t.docente_id === docenteId);
+    }
+    return filtered;
+  }
+
+  getCampusPorIF(siglaIF: string): string[] {
+    const docentes = this.getDocentesPorIF(siglaIF);
+    const campusUnicos = [...new Set(docentes.map(d => d.campus))].sort();
+
+    return campusUnicos;
+  }
+
+  // ATUALIZAR: Produção por ano COM FILTRO DE IF e FILTRO DE ANO
+  // eslint-disable-next-line @typescript-eslint/adjacent-overload-signatures
+
+
+  // NOVO: Estatísticas por IF
+  getEstatisticasPorIF(siglaIF: string) {
+    const docentesIF = this.docentes.filter(d => d.sigla_if?.toUpperCase() === siglaIF.toUpperCase());
+    const artigosIF = this.artigos.filter(a => a.sigla_if?.toUpperCase() === siglaIF.toUpperCase());
+    const orientacoesIF = this.orientacoes.filter(o => o.sigla_if?.toUpperCase() === siglaIF.toUpperCase());
+    const projetosIF = this.projetos.filter(p => p.sigla_if?.toUpperCase() === siglaIF.toUpperCase());
+    const trabalhosIF = this.trabalhos.filter(t => t.sigla_if?.toUpperCase() === siglaIF.toUpperCase());
+
+    return {
+      totalDocentes: docentesIF.length,
+      totalComDoutorado: docentesIF.filter(d => d.tem_doutorado).length,
+      totalComPosDoutorado: docentesIF.filter(d => d.tem_pos_doutorado).length,
+      totalPremiados: docentesIF.filter(d => d.premiado).length,
+      totalArtigos: artigosIF.length,
+      totalOrientacoes: orientacoesIF.length,
+      totalProjetos: projetosIF.length,
+      totalTrabalhos: trabalhosIF.length,
+      mediaArtigosPorDocente: docentesIF.length > 0
+        ? (artigosIF.length / docentesIF.length).toFixed(1)
+        : 0,
+      mediaOrientacoesPorDocente: docentesIF.length > 0
+        ? (orientacoesIF.length / docentesIF.length).toFixed(1)
+        : 0
+    };
+  }
 }
 
 //src/app/core/services/docentes.service.ts
-

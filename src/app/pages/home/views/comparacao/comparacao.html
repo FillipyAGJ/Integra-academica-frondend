@@ -1,0 +1,266 @@
+<!-- eslint-disable @angular-eslint/template/click-events-have-key-events -->
+<!-- eslint-disable @angular-eslint/template/interactive-supports-focus -->
+<app-informacao-integra></app-informacao-integra>
+
+<div class="comparacao-container">
+  <div class="header">
+    <button class="btn-voltar" (click)="voltarHome()">← Voltar</button>
+    <h1>Comparação entre Instituições</h1>
+    <p class="subtitulo">
+      Análise comparativa dos dados acadêmicos da Rede Federal
+    </p>
+  </div>
+
+  @if (carregando()) {
+  <div class="loading">
+    <div class="spinner"></div>
+    <p>Carregando dados...</p>
+  </div>
+  } @if (erro()) {
+  <div class="erro">
+    <p>{{ erro() }}</p>
+    <button (click)="carregarDados()">Tentar novamente</button>
+  </div>
+  } @if (!carregando() && !erro()) {
+  <!-- Seletor de Instituições -->
+  <div class="seletor-instituicoes">
+    <div class="seletor-header">
+      <h2>Selecione as instituições para comparar (máximo 5)</h2>
+      <div class="acoes">
+        <input
+          type="text"
+          placeholder="Buscar instituição..."
+          [(ngModel)]="termoBusca"
+          class="input-busca"
+        />
+        <button class="btn-limpar" (click)="limparSelecao()">
+          Limpar Seleção
+        </button>
+      </div>
+    </div>
+
+    <div class="chips-selecionadas">
+      <strong>Selecionadas ({{ instituicoesSelecionadas().length }}):</strong>
+      @for (sigla of instituicoesSelecionadas(); track sigla) {
+      <span class="chip">
+        {{ sigla }}
+        <button (click)="toggleInstituicao(sigla)" class="chip-remove">
+          ×
+        </button>
+      </span>
+      }
+    </div>
+
+    <div class="grid-instituicoes">
+      @for (inst of getInstituicoesFiltradas(); track inst.sigla) {
+      <div
+        class="card-instituicao"
+        [class.selecionada]="estaSelecionada(inst.sigla)"
+        [class.desabilitada]="!estaSelecionada(inst.sigla) && instituicoesSelecionadas().length >= 5"
+        (click)="toggleInstituicao(inst.sigla)"
+      >
+        <div class="checkbox">
+          @if (estaSelecionada(inst.sigla)) {
+          <span class="check">✓</span>
+          }
+        </div>
+        <div class="info">
+          <strong>{{ inst.sigla }}</strong>
+          <span class="estado">{{ inst.estado }}</span>
+        </div>
+        <p class="nome">{{ inst.nome }}</p>
+      </div>
+      }
+    </div>
+  </div>
+
+  <!-- Tabela de Comparação -->
+  @if (estatisticas().length > 0) {
+  <div class="tabela-comparacao">
+    <h2>Comparativo de Métricas</h2>
+
+    <div class="tabela-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th class="metrica-col">Métrica</th>
+            @for (stat of estatisticas(); track stat.sigla) {
+            <th class="if-col">
+              <div class="header-if">
+                <strong>{{ stat.sigla }}</strong>
+                <span class="estado-badge">{{ stat.estado }}</span>
+              </div>
+            </th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Docentes -->
+          <tr>
+            <td class="metrica-label">Total de Docentes</td>
+            @for (stat of estatisticas(); track stat.sigla) {
+            <td [class.destaque]="ehMaior(stat.totalDocentes, 'totalDocentes')">
+              {{ stat.totalDocentes }}
+            </td>
+            }
+          </tr>
+
+          <!-- Formação -->
+          <tr class="secao-header">
+            <td [attr.colspan]="estatisticas().length + 1">
+              📚 Formação Acadêmica
+            </td>
+          </tr>
+          <tr>
+            <td class="metrica-label">Docentes com Doutorado</td>
+            @for (stat of estatisticas(); track stat.sigla) {
+            <td
+              [class.destaque]="ehMaior(stat.totalComDoutorado, 'totalComDoutorado')"
+            >
+              {{ stat.totalComDoutorado }} ({{ stat.percentualComDoutorado }}%)
+            </td>
+            }
+          </tr>
+          <tr>
+            <td class="metrica-label">Docentes com Pós-Doutorado</td>
+            @for (stat of estatisticas(); track stat.sigla) {
+            <td
+              [class.destaque]="ehMaior(stat.totalComPosDoutorado, 'totalComPosDoutorado')"
+            >
+              {{ stat.totalComPosDoutorado }}
+            </td>
+            }
+          </tr>
+
+          <!-- Produção Científica -->
+          <tr class="secao-header">
+            <td [attr.colspan]="estatisticas().length + 1">
+              📝 Produção Científica
+            </td>
+          </tr>
+          <tr>
+            <td class="metrica-label">Total de Artigos</td>
+            @for (stat of estatisticas(); track stat.sigla) {
+            <td [class.destaque]="ehMaior(stat.totalArtigos, 'totalArtigos')">
+              {{ stat.totalArtigos }}
+            </td>
+            }
+          </tr>
+          <tr>
+            <td class="metrica-label">Média de Artigos por Docente</td>
+            @for (stat of estatisticas(); track stat.sigla) {
+            <td
+              [class.destaque]="ehMaior(stat.mediaArtigosPorDocente, 'mediaArtigosPorDocente')"
+            >
+              {{ stat.mediaArtigosPorDocente }}
+            </td>
+            }
+          </tr>
+          <tr>
+            <td class="metrica-label">Trabalhos em Eventos (últimos 5 anos)</td>
+            @for (stat of estatisticas(); track stat.sigla) {
+            <td
+              [class.destaque]="ehMaior(stat.totalTrabalhos, 'totalTrabalhos')"
+            >
+              {{ stat.totalTrabalhos }}
+            </td>
+            }
+          </tr>
+
+          <!-- Orientações -->
+          <tr class="secao-header">
+            <td [attr.colspan]="estatisticas().length + 1">👥 Orientações</td>
+          </tr>
+          <tr>
+            <td class="metrica-label">Total de Orientações</td>
+            @for (stat of estatisticas(); track stat.sigla) {
+            <td
+              [class.destaque]="ehMaior(stat.totalOrientacoes, 'totalOrientacoes')"
+            >
+              {{ stat.totalOrientacoes }}
+            </td>
+            }
+          </tr>
+          <tr>
+            <td class="metrica-label">Orientações de Mestrado</td>
+            @for (stat of estatisticas(); track stat.sigla) {
+            <td
+              [class.destaque]="ehMaior(stat.totalOrientacoesMestrado, 'totalOrientacoesMestrado')"
+            >
+              {{ stat.totalOrientacoesMestrado }}
+            </td>
+            }
+          </tr>
+          <tr>
+            <td class="metrica-label">Orientações de Doutorado</td>
+            @for (stat of estatisticas(); track stat.sigla) {
+            <td
+              [class.destaque]="ehMaior(stat.totalOrientacoesDoutorado, 'totalOrientacoesDoutorado')"
+            >
+              {{ stat.totalOrientacoesDoutorado }}
+            </td>
+            }
+          </tr>
+          <tr>
+            <td class="metrica-label">Média de Orientações por Docente</td>
+            @for (stat of estatisticas(); track stat.sigla) {
+            <td
+              [class.destaque]="ehMaior(stat.mediaOrientacoesPorDocente, 'mediaOrientacoesPorDocente')"
+            >
+              {{ stat.mediaOrientacoesPorDocente }}
+            </td>
+            }
+          </tr>
+
+          <!-- Projetos -->
+          <tr class="secao-header">
+            <td [attr.colspan]="estatisticas().length + 1">🔬 Projetos</td>
+          </tr>
+          <tr>
+            <td class="metrica-label">Total de Projetos</td>
+            @for (stat of estatisticas(); track stat.sigla) {
+            <td [class.destaque]="ehMaior(stat.totalProjetos, 'totalProjetos')">
+              {{ stat.totalProjetos }}
+            </td>
+            }
+          </tr>
+          <tr>
+            <td class="metrica-label">Média de Projetos por Docente</td>
+            @for (stat of estatisticas(); track stat.sigla) {
+            <td
+              [class.destaque]="ehMaior(stat.mediaProjetosPorDocente, 'mediaProjetosPorDocente')"
+            >
+              {{ stat.mediaProjetosPorDocente }}
+            </td>
+            }
+          </tr>
+
+          <!-- Reconhecimento -->
+          <tr class="secao-header">
+            <td [attr.colspan]="estatisticas().length + 1">
+              🏆 Reconhecimento
+            </td>
+          </tr>
+          <tr>
+            <td class="metrica-label">Docentes Premiados</td>
+            @for (stat of estatisticas(); track stat.sigla) {
+            <td
+              [class.destaque]="ehMaior(stat.totalPremiados, 'totalPremiados')"
+            >
+              {{ stat.totalPremiados }} ({{ stat.percentualPremiados }}%)
+            </td>
+            }
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="legenda">
+      <p>
+        💡 <strong>Legenda:</strong> Valores destacados em verde indicam o
+        melhor desempenho na métrica entre as instituições selecionadas.
+      </p>
+    </div>
+  </div>
+  } }
+</div>

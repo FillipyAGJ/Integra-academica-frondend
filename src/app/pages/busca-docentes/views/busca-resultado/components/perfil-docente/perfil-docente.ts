@@ -295,7 +295,7 @@ export class PerfilDocenteComponent implements OnInit {
         const anoStr = String(artigo.artigo_ano);
         ano = parseInt(anoStr.trim(), 10);
       }
-      if (ano && !isNaN(ano) && ano > 1900 && ano <= 2025) {
+      if (ano && !isNaN(ano) && ano > 1991 && ano <= 2025) {
         todosAnos.add(ano);
       }
     });
@@ -309,7 +309,7 @@ export class PerfilDocenteComponent implements OnInit {
         const anoStr = String(trabalho.ano);
         ano = parseInt(anoStr.trim(), 10);
       }
-      if (ano && !isNaN(ano) && ano > 1900 && ano <= 2025) {
+      if (ano && !isNaN(ano) && ano > 1991 && ano <= 2025) {
         todosAnos.add(ano);
       }
     });
@@ -384,7 +384,7 @@ export class PerfilDocenteComponent implements OnInit {
         const anoStr = String(artigo.artigo_ano);
         ano = parseInt(anoStr.trim(), 10);
       }
-      if (ano && !isNaN(ano) && ano > 1900 && ano <= 2025) {
+      if (ano && !isNaN(ano) && ano > 1991 && ano <= 2025) {
         todosAnos.add(ano);
       }
     });
@@ -398,7 +398,7 @@ export class PerfilDocenteComponent implements OnInit {
         const anoStr = String(trabalho.ano);
         ano = parseInt(anoStr.trim(), 10);
       }
-      if (ano && !isNaN(ano) && ano > 1900 && ano <= 2025) {
+      if (ano && !isNaN(ano) && ano > 1991 && ano <= 2025) {
         todosAnos.add(ano);
       }
     });

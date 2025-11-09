@@ -5,10 +5,14 @@ import { BuscaDocentesComponent } from './pages/busca-docentes/busca-docentes.co
 import { ProducaoCientificaComponent } from './pages/producao-cientifica/producao-cientifica.component';
 //import { TemasTendenciasComponent } from './pages/temas-tendencias/temas-tendencias.component';
 import { PerfilDocenteComponent } from './pages/busca-docentes/views/busca-resultado/components/perfil-docente/perfil-docente';
+import { ComparacaoComponent } from './pages/home/views/comparacao/comparacao'; // NOVO
+//import { RankingComponent } from './pages/ranking/ranking.component'; // NOVO
 
 export const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' },
   { path: 'home', component: HomeComponent },
+  { path: 'comparacao', component: ComparacaoComponent }, // NOVO
+  //{ path: 'ranking', component: RankingComponent }, // NOVO
   { path: 'dashboard/:sigla', component: DashboardComponent },
   {
     path: 'dashboard/:sigla/busca-docentes',
@@ -29,8 +33,8 @@ export const routes: Routes = [
   // { path: '**', redirectTo: 'home' },
 
   //{
-//   path: 'temas-tendencias',
-//   loadComponent: () => import('./pages/temas-tendencias/temas-tendencias.component')
-//     .then(m => m.TemasTendenciasComponent)
-// }
+  //   path: 'temas-tendencias',
+  //   loadComponent: () => import('./pages/temas-tendencias/temas-tendencias.component')
+  //     .then(m => m.TemasTendenciasComponent)
+  // }
 ];

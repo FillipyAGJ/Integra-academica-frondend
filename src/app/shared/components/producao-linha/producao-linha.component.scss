@@ -1,6 +1,6 @@
 // producao-linha.component.scss
 .grafico {
-  margin-top: 30px; // ← ADICIONE ESTA LINHA
+  margin-top: 30px;
   padding: 20px;
   background: white;
   border-radius: 8px;
@@ -15,7 +15,7 @@
     }
 
     .demo-chart {
-      height: 450px; // ← AUMENTE A ALTURA
+      height: 450px;
       width: 100%;
     }
 
