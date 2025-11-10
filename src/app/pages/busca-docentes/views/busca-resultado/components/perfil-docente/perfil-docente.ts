@@ -255,27 +255,42 @@ export class PerfilDocenteComponent implements OnInit {
     this.loading.set(true);
     const idNumerico = Number(id);
 
+    console.log('🔍 Carregando docente ID:', idNumerico);
+
     this.docentesService.carregarTodosDados().subscribe({
       next: () => {
         const docente = this.docentesService.getDocentes().find(d => d.id === idNumerico);
         const docenteCompleto = this.docentesService.getDocenteCompleto(idNumerico);
 
+        console.log('📊 Docente encontrado:', docente);
+        console.log('📊 Docente completo:', docenteCompleto);
+
         if (docente && docenteCompleto) {
           this.docente.set(docente);
           this.docenteCompleto.set(docenteCompleto);
+
+          console.log('📈 Artigos:', docenteCompleto.artigos?.length || 0);
+          console.log('📈 Trabalhos:', docenteCompleto.trabalhos_eventos?.length || 0);
+          console.log('📈 Orientações:', docenteCompleto.orientacoes?.length || 0);
+          console.log('📈 Projetos:', docenteCompleto.projetos?.length || 0);
+
           this.calcularProducaoCientifica(docenteCompleto);
-          this.calcularProducaoCientificaCompleta(docenteCompleto); // NOVO
+          this.calcularProducaoCientificaCompleta(docenteCompleto);
           this.calcularDistribuicao(docenteCompleto);
           this.calcularCrescimento(docenteCompleto);
+
+          console.log('✅ Produção científica calculada:', this.producaoCientifica());
+          console.log('✅ Distribuição calculada:', this.distribuicaoProducao());
         } else {
-          this.router.navigate(['/buscar-docentes']);
+          console.error('❌ Docente não encontrado');
+          this.router.navigate(['/busca-docentes']);
         }
         this.loading.set(false);
       },
       error: (err) => {
-        console.error('Erro ao carregar docente:', err);
+        console.error('❌ Erro ao carregar docente:', err);
         this.loading.set(false);
-        this.router.navigate(['/buscar-docentes']);
+        this.router.navigate(['/busca-docentes']);
       }
     });
   }
@@ -326,8 +341,6 @@ export class PerfilDocenteComponent implements OnInit {
     const anosOrdenados = Array.from(todosAnos).sort((a, b) => a - b);
     const anos = anosOrdenados.slice(-5); // Últimos 5 anos
 
-    console.log('📅 Anos selecionados:', anos);
-
     // Inicializar anos com zero
     anos.forEach(ano => producaoPorAno.set(ano, 0));
 
@@ -366,7 +379,6 @@ export class PerfilDocenteComponent implements OnInit {
       quantidade: producaoPorAno.get(ano) || 0
     }));
 
-    console.log('📊 Produção final por ano:', producao);
     this.producaoCientifica.set(producao);
   }
 
@@ -449,7 +461,6 @@ export class PerfilDocenteComponent implements OnInit {
       quantidade: producaoPorAno.get(ano) || 0
     }));
 
-    console.log('📊 Produção completa por ano:', producao);
     this.producaoCientificaCompleta.set(producao);
   }
 
@@ -489,8 +500,6 @@ export class PerfilDocenteComponent implements OnInit {
     const anosOrdenados = Array.from(todosAnos).sort((a, b) => a - b);
     const anoInicio = anosOrdenados.length > 0 ? anosOrdenados[Math.max(0, anosOrdenados.length - 5)] : new Date().getFullYear() - 4;
     const anoAtual = new Date().getFullYear();
-
-    console.log('📅 Período de análise:', { anoInicio, anoAtual });
 
     let totalArtigos = 0;
     let totalTrabalhos = 0;
@@ -540,14 +549,6 @@ export class PerfilDocenteComponent implements OnInit {
 
     const total = totalArtigos + totalTrabalhos + totalOrientacoes + totalProjetos;
 
-    console.log('📊 TOTAIS CALCULADOS:', {
-      totalArtigos,
-      totalTrabalhos,
-      totalOrientacoes,
-      totalProjetos,
-      total
-    });
-
     if (total === 0) {
       console.warn('⚠️ Total é ZERO - usando valores padrão');
       this.distribuicaoProducao.set([
@@ -586,7 +587,6 @@ export class PerfilDocenteComponent implements OnInit {
       }
     ];
 
-    console.log('📊 Distribuição final:', distribuicao);
     this.distribuicaoProducao.set(distribuicao);
   }
 
@@ -668,13 +668,6 @@ export class PerfilDocenteComponent implements OnInit {
 
     const producaoAnterior = artigosAnterior + trabalhosAnterior;
 
-    console.log('📊 Crescimento:', {
-      anoAtual,
-      producaoAtual,
-      anoAnterior,
-      producaoAnterior
-    });
-
     if (producaoAnterior === 0) {
       this.crescimentoAnual.set(producaoAtual > 0 ? '+100%' : '0%');
       return;
@@ -725,8 +718,7 @@ export class PerfilDocenteComponent implements OnInit {
   }
 
   voltar(): void {
-    const sigla = this.route.snapshot.paramMap.get('sigla');
-    this.router.navigate(['/dashboard', sigla, 'busca-docentes']);
+    this.router.navigate(['/busca-docentes']);
   }
 
   exportarPerfil() {
@@ -804,13 +796,20 @@ export class PerfilDocenteComponent implements OnInit {
       // Limpa o URL
       window.URL.revokeObjectURL(url);
 
-      console.log('Perfil exportado com sucesso!');
     } catch (error) {
       console.error('Erro ao exportar perfil:', error);
       alert('Erro ao exportar perfil. Tente novamente.');
     } finally {
       this.exportando.set(false);
     }
+  }
+
+  getAreaLabel(palavrasChave: string | undefined): string {
+    if (!palavrasChave) return 'Área não informada';
+    // Limpar HTML entities antes de exibir
+    const limpo = palavrasChave.replace(/&[#\w]+;/g, '');
+    const areas = limpo.split(',').map(p => p.trim()).filter(p => p);
+    return areas[0] || 'Área não informada';
   }
 
   private escapeCsv(value: string): string {

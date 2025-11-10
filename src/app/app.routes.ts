@@ -1,31 +1,18 @@
 import { Routes } from '@angular/router';
-import { HomeComponent } from './pages/home/home.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { BuscaDocentesComponent } from './pages/busca-docentes/busca-docentes.component';
 import { ProducaoCientificaComponent } from './pages/producao-cientifica/producao-cientifica.component';
-//import { TemasTendenciasComponent } from './pages/temas-tendencias/temas-tendencias.component';
 import { PerfilDocenteComponent } from './pages/busca-docentes/views/busca-resultado/components/perfil-docente/perfil-docente';
-import { ComparacaoComponent } from './pages/home/views/comparacao/comparacao'; // NOVO
-//import { RankingComponent } from './pages/ranking/ranking.component'; // NOVO
+import { ComparacaoComponent } from './pages/comparacao/comparacao';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'home', pathMatch: 'full' },
-  { path: 'home', component: HomeComponent },
-  { path: 'comparacao', component: ComparacaoComponent }, // NOVO
-  //{ path: 'ranking', component: RankingComponent }, // NOVO
-  { path: 'dashboard/:sigla', component: DashboardComponent },
-  {
-    path: 'dashboard/:sigla/busca-docentes',
-    component: BuscaDocentesComponent,
-  },
-  {
-    path: 'dashboard/:sigla/busca-docentes/perfil/:id',
-    component: PerfilDocenteComponent,
-  },
-  {
-    path: 'dashboard/:sigla/producao-cientifica',
-    component: ProducaoCientificaComponent,
-  },
+  { path: '', component: DashboardComponent }, // ✅ Rota raiz vai direto pro dashboard
+  { path: 'dashboard', redirectTo: '', pathMatch: 'full' }, // ✅ Redirect caso alguém acesse /dashboard
+  { path: 'busca-docentes', component: BuscaDocentesComponent },
+  { path: 'busca-docentes/perfil/:id', component: PerfilDocenteComponent },
+  { path: 'producao-cientifica', component: ProducaoCientificaComponent },
+  { path: 'comparacao', component: ComparacaoComponent },
+  { path: '**', redirectTo: '' }, // ✅ Qualquer rota inválida volta pro dashboard
   // {
   //   path: 'dashboard/:sigla/temas-tendencias',
   //   component: TemasTendenciasComponent,

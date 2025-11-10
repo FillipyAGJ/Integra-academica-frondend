@@ -18,14 +18,18 @@
   width: 50px;
   height: 50px;
   border: 5px solid #f3f3f3;
-  border-top: 5px solid #00A9CE;
+  border-top: 5px solid #00a9ce;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Container */
@@ -39,13 +43,13 @@
 
 /* Header */
 .header {
-  background: #00A9CE;
+  background: #00a9ce;
   color: white;
   padding: 1rem 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .logo {
@@ -77,7 +81,7 @@
   padding: 2rem;
   margin: 2rem;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 
   h1 {
     margin: 0 0 0.5rem 0;
@@ -97,7 +101,7 @@
   padding: 1.5rem 2rem;
   margin: 0 2rem 2rem 2rem;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   display: flex;
   gap: 2rem;
   align-items: center;
@@ -126,6 +130,14 @@
     cursor: pointer;
   }
 
+  input[type="number"] {
+    padding: 0.5rem 1rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    width: 100px;
+  }
+
   span {
     color: #666;
     font-size: 0.9rem;
@@ -135,24 +147,25 @@
 /* Chart Container */
 .chart-container {
   background: white;
-  padding: 1.5rem 2rem; // ← Reduzido de 2rem
+  padding: 1.5rem 2rem;
   margin: 0 2rem 2rem 2rem;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 
   h2 {
-    margin: 0 0 1rem 0; // ← Reduzido de 1.5rem para 1rem
+    margin: 0 0 1rem 0;
     color: #333;
-    font-size: 1.3rem; // ← Reduzido de 1.5rem
+    font-size: 1.3rem;
     font-weight: 600;
   }
-  
+
   .chart-wrapper {
     position: relative;
-    height: 350px; // ← Altura ajustada
+    height: 350px;
     width: 100%;
   }
 }
+
 /* Info Cards */
 .info-cards {
   display: grid;
@@ -165,7 +178,7 @@
   background: white;
   padding: 1.5rem;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 
   h3 {
     margin: 0 0 1rem 0;
@@ -195,7 +208,7 @@
 
   .rank {
     font-weight: bold;
-    color: #00A9CE;
+    color: #00a9ce;
     min-width: 25px;
   }
 
@@ -247,7 +260,7 @@
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #00A9CE, #0088AA);
+  background: linear-gradient(90deg, #00a9ce, #0088aa);
   transition: width 0.3s;
 }
 
@@ -272,7 +285,7 @@
   }
 
   .area-badge {
-    background: #00A9CE;
+    background: #00a9ce;
     color: white;
     padding: 0.25rem 0.75rem;
     border-radius: 12px;
@@ -283,63 +296,142 @@
 
 /* Heatmap */
 .heatmap {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding-bottom: 10px;
+
+  &::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #00a9ce;
+    border-radius: 4px;
+
+    &:hover {
+      background: #0088a8;
+    }
+  }
 }
 
 .heatmap-row {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  margin-bottom: 4px;
+  min-width: max-content;
 }
 
 .heatmap-label {
-  min-width: 180px;
-  font-weight: 600;
-  color: #333;
-  font-size: 0.9rem;
+  min-width: 200px;
+  max-width: 200px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  background: #f8f9fa;
+  border-radius: 4px;
+  margin-right: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
 }
 
 .heatmap-cells {
   display: flex;
-  gap: 0.5rem;
-  flex: 1;
+  gap: 4px;
+  flex-wrap: nowrap;
 }
 
 .heatmap-cell {
-  flex: 1;
-  aspect-ratio: 1;
+  min-width: 45px;
+  width: 45px;
+  height: 45px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
   color: white;
-  font-weight: bold;
-  font-size: 0.85rem;
   cursor: pointer;
   transition: transform 0.2s;
-  min-width: 40px;
+  flex-shrink: 0;
 
   &:hover {
     transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     z-index: 10;
   }
 }
 
 .heatmap-years {
   display: flex;
-  gap: 0.5rem;
-  margin-left: 196px;
-  margin-top: 0.5rem;
+  gap: 4px;
+  margin-left: 208px;
+  margin-top: 8px;
+  flex-wrap: nowrap;
 
   span {
-    flex: 1;
+    min-width: 45px;
+    width: 45px;
     text-align: center;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
+    font-weight: 600;
     color: #666;
-    min-width: 40px;
+    flex-shrink: 0;
   }
+}
+
+/* Paginação */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.pagination-btn {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #333;
+  transition: all 0.2s;
+
+  &:hover:not(:disabled) {
+    background: #00a9ce;
+    color: white;
+    border-color: #00a9ce;
+  }
+
+  &.active {
+    background: #00a9ce;
+    color: white;
+    border-color: #00a9ce;
+    font-weight: 600;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.pagination-info {
+  margin-left: 12px;
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 500;
 }
 
 /* KPI Cards */
@@ -354,7 +446,7 @@
   background: white;
   padding: 1.5rem;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -377,7 +469,7 @@
 .kpi-value {
   font-size: 1.8rem;
   font-weight: bold;
-  color: #00A9CE;
+  color: #00a9ce;
 
   span {
     font-size: 0.9rem;
@@ -441,4 +533,17 @@
       width: 100%;
     }
   }
+}
+
+.no-data {
+  text-align: center;
+  color: #999;
+  font-style: italic;
+  padding: 2rem;
+}
+
+.filter-group select:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+  opacity: 0.6;
 }

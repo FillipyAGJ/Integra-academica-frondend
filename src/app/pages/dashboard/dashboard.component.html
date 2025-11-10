@@ -1,38 +1,29 @@
+<!-- dashboard.component.html -->
 <app-informacao-integra></app-informacao-integra>
+
 <section class="section-home">
   <div class="cards-list">
-    <div class="cards">
-      @if (sigla(); as s) {
-      <a [routerLink]="['/dashboard', s, 'busca-docentes']">
-        <div class="cards-items">
-          <img src="zoom-icon.svg" alt="" />
-          <h3>Buscar Docentes</h3>
-        </div>
-      </a>
-      }
-    </div>
+    <a routerLink="/busca-docentes" class="cards">
+      <div class="cards-items">
+        <img src="zoom-icon.svg" alt="Buscar Docentes" />
+        <h3>Buscar Docentes</h3>
+      </div>
+    </a>
 
-    <div class="cards">
-      @if (sigla(); as s) {
-      <a [routerLink]="['/dashboard', s, 'producao-cientifica']">
-        <div class="cards-items">
-          <img src="bar-chart-icon.svg" alt="" />
-          <h3>Produção Científica</h3>
-        </div>
-      </a>
-      }
-    </div>
+    <a routerLink="/producao-cientifica" class="cards">
+      <div class="cards-items">
+        <img src="bar-chart-icon.svg" alt="Produção Científica" />
+        <h3>Produção Científica</h3>
+      </div>
+    </a>
 
-    <div class="cards">
-      @if (sigla(); as s) {
-      <a [routerLink]="['/dashboard', s, 'temas-tendencias']">
-        <div class="cards-items">
-          <img src="communication-icon.svg" alt="" />
-          <h3>Temas e Tendências</h3>
-        </div>
-      </a>
-      }
-    </div>
+    <a routerLink="/comparacao" class="cards">
+      <div class="cards-items">
+        <img src="communication-icon.svg" alt="Comparar Instituições" />
+        <h3>Comparar Instituições</h3>
+      </div>
+    </a>
   </div>
-  <app-producao-linha [siglaIF]="sigla() ?? undefined"></app-producao-linha>
+
+  <app-producao-linha></app-producao-linha>
 </section>

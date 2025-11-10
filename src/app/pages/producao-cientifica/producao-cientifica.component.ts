@@ -1,13 +1,19 @@
+// producao-cientifica.component.ts
 /* eslint-disable @typescript-eslint/no-inferrable-types */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Component, OnInit, inject, AfterViewInit, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule, ActivatedRoute } from '@angular/router';
+import { RouterModule } from '@angular/router';
 import { Chart, registerables } from 'chart.js';
 import { DocentesService } from '../../core/services/docentes.service';
 
 Chart.register(...registerables);
+
+interface Instituto {
+  sigla: string;
+  nome: string;
+}
 
 @Component({
   selector: 'app-producao-cientifica',
@@ -21,17 +27,65 @@ export class ProducaoCientificaComponent implements OnInit, AfterViewInit {
   @ViewChild('evolutionChart') canvasRef!: ElementRef<HTMLCanvasElement>;
 
   private docentesService = inject(DocentesService);
-  private route = inject(ActivatedRoute);
   private cdr = inject(ChangeDetectorRef);
 
+
+  heatmapPaginaAtual: number = 1;
+  heatmapItensPorPagina: number = 10;
+  heatmapTotalPaginas: number = 1;
+  heatmapTodosCampus: { campus: string; valores: number[] }[] = [];
+
   siglaIF: string | null = null;
-  nomeIF: string = '';
+  nomeIF: string = 'Rede Federal de Educação';
 
   filtros = {
+    instituto: 'todos',
     campus: 'todos',
-    anoInicio: 2015,
+    anoInicio: 1990,
     anoFim: 2024
   };
+
+  institutosDisponiveis: Instituto[] = [
+    { sigla: 'IFAC', nome: 'Instituto Federal do Acre' },
+    { sigla: 'IFAL', nome: 'Instituto Federal de Alagoas' },
+    { sigla: 'IFAP', nome: 'Instituto Federal do Amapá' },
+    { sigla: 'IFAM', nome: 'Instituto Federal do Amazonas' },
+    { sigla: 'IFBA', nome: 'Instituto Federal da Bahia' },
+    { sigla: 'IFB', nome: 'Instituto Federal de Brasília' },
+    { sigla: 'IFCE', nome: 'Instituto Federal do Ceará' },
+    { sigla: 'IFES', nome: 'Instituto Federal do Espírito Santo' },
+    { sigla: 'IFG', nome: 'Instituto Federal de Goiás' },
+    { sigla: 'IFGOIANO', nome: 'Instituto Federal Goiano' },
+    { sigla: 'IFMA', nome: 'Instituto Federal do Maranhão' },
+    { sigla: 'IFMG', nome: 'Instituto Federal de Minas Gerais' },
+    { sigla: 'IFNMG', nome: 'Instituto Federal do Norte de Minas Gerais' },
+    { sigla: 'IFSUDESTEMG', nome: 'Instituto Federal do Sudeste de Minas Gerais' },
+    { sigla: 'IFSULDEMINAS', nome: 'Instituto Federal do Sul de Minas Gerais' },
+    { sigla: 'IFTM', nome: 'Instituto Federal do Triângulo Mineiro' },
+    { sigla: 'IFMT', nome: 'Instituto Federal de Mato Grosso' },
+    { sigla: 'IFMS', nome: 'Instituto Federal de Mato Grosso do Sul' },
+    { sigla: 'IFPA', nome: 'Instituto Federal do Pará' },
+    { sigla: 'IFPB', nome: 'Instituto Federal da Paraíba' },
+    { sigla: 'IFPE', nome: 'Instituto Federal de Pernambuco' },
+    { sigla: 'IFSertaoPE', nome: 'Instituto Federal do Sertão Pernambucano' },
+    { sigla: 'IFPI', nome: 'Instituto Federal do Piauí' },
+    { sigla: 'IFPR', nome: 'Instituto Federal do Paraná' },
+    { sigla: 'IFRJ', nome: 'Instituto Federal do Rio de Janeiro' },
+    { sigla: 'IFFLUMINENSE', nome: 'Instituto Federal Fluminense' },
+    { sigla: 'IFRN', nome: 'Instituto Federal do Rio Grande do Norte' },
+    { sigla: 'IFRO', nome: 'Instituto Federal de Rondônia' },
+    { sigla: 'IFRR', nome: 'Instituto Federal de Roraima' },
+    { sigla: 'IFRS', nome: 'Instituto Federal do Rio Grande do Sul' },
+    { sigla: 'IFFARROUPILHA', nome: 'Instituto Federal Farroupilha' },
+    { sigla: 'IFSUL', nome: 'Instituto Federal Sul-rio-grandense' },
+    { sigla: 'IFSC', nome: 'Instituto Federal de Santa Catarina' },
+    { sigla: 'IFC', nome: 'Instituto Federal Catarinense' },
+    { sigla: 'IFSP', nome: 'Instituto Federal de São Paulo' },
+    { sigla: 'IFS', nome: 'Instituto Federal de Sergipe' },
+    { sigla: 'IFTO', nome: 'Instituto Federal do Tocantins' },
+    { sigla: 'CEFET-RJ', nome: 'CEFET/RJ' },
+    { sigla: 'CEFET-MG', nome: 'CEFET-MG' }
+  ];
 
   top10Produtores: { nome: string; total: number }[] = [];
   colaboracoesExternas: { nome: string; total: number; percentual: number }[] = [];
@@ -51,63 +105,16 @@ export class ProducaoCientificaComponent implements OnInit, AfterViewInit {
   dadosCarregados = false;
 
   ngOnInit(): void {
-    this.route.parent?.paramMap.subscribe(params => {
-      this.siglaIF = params.get('sigla');
-      this.nomeIF = this.getNomeIF(this.siglaIF);
-      this.carregarDados();
-    });
+    // ✅ Não pega mais sigla da rota
+    this.siglaIF = null;
+    this.nomeIF = 'Rede Federal de Educação';
+    this.carregarDados();
   }
 
   ngAfterViewInit(): void {
-    // ✅ Só tenta criar o gráfico se os dados já foram carregados
     if (this.dadosCarregados && !this.carregando) {
       setTimeout(() => this.criarGraficoEvolucao(), 100);
     }
-  }
-
-  getNomeIF(sigla: string | null): string {
-    const instituicoes: Record<string, string> = {
-      'IFAC': 'Instituto Federal do Acre',
-      'IFAL': 'Instituto Federal de Alagoas',
-      'IFAP': 'Instituto Federal do Amapá',
-      'IFAM': 'Instituto Federal do Amazonas',
-      'IFBA': 'Instituto Federal da Bahia',
-      'IFB': 'Instituto Federal de Brasília',
-      'IFCE': 'Instituto Federal do Ceará',
-      'IFES': 'Instituto Federal do Espírito Santo',
-      'IFG': 'Instituto Federal de Goiás',
-      'IFGOIANO': 'Instituto Federal Goiano',
-      'IFMA': 'Instituto Federal do Maranhão',
-      'IFMG': 'Instituto Federal de Minas Gerais',
-      'IFNMG': 'Instituto Federal do Norte de Minas Gerais',
-      'IFSUDESTEMG': 'Instituto Federal do Sudeste de Minas Gerais',
-      'IFSULDEMINAS': 'Instituto Federal do Sul de Minas Gerais',
-      'IFTM': 'Instituto Federal do Triângulo Mineiro',
-      'IFMT': 'Instituto Federal de Mato Grosso',
-      'IFMS': 'Instituto Federal de Mato Grosso do Sul',
-      'IFPA': 'Instituto Federal do Pará',
-      'IFPB': 'Instituto Federal da Paraíba',
-      'IFPE': 'Instituto Federal de Pernambuco',
-      'IFSertaoPE': 'Instituto Federal do Sertão Pernambucano',
-      'IFPI': 'Instituto Federal do Piauí',
-      'IFPR': 'Instituto Federal do Paraná',
-      'IFRJ': 'Instituto Federal do Rio de Janeiro',
-      'IFFLUMINENSE': 'Instituto Federal Fluminense',
-      'IFRN': 'Instituto Federal do Rio Grande do Norte',
-      'IFRO': 'Instituto Federal de Rondônia',
-      'IFRR': 'Instituto Federal de Roraima',
-      'IFRS': 'Instituto Federal do Rio Grande do Sul',
-      'IFFARROUPILHA': 'Instituto Federal Farroupilha',
-      'IFSUL': 'Instituto Federal Sul-rio-grandense',
-      'IFSC': 'Instituto Federal de Santa Catarina',
-      'IFC': 'Instituto Federal Catarinense',
-      'IFSP': 'Instituto Federal de São Paulo',
-      'IFS': 'Instituto Federal de Sergipe',
-      'IFTO': 'Instituto Federal do Tocantins',
-      'CEFET-RJ': 'CEFET/RJ',
-      'CEFET-MG': 'CEFET-MG'
-    };
-    return instituicoes[sigla || ''] || sigla || 'Instituto Federal';
   }
 
   carregarDados(): void {
@@ -121,7 +128,6 @@ export class ProducaoCientificaComponent implements OnInit, AfterViewInit {
         this.dadosCarregados = true;
         this.carregando = false;
 
-        // ✅ Força detecção de mudanças e aguarda renderização
         this.cdr.detectChanges();
 
         setTimeout(() => {
@@ -345,7 +351,8 @@ export class ProducaoCientificaComponent implements OnInit, AfterViewInit {
     orientacoes.forEach(o => {
       if (!o) return;
       const inst = o.instituicao;
-      if (inst && !inst.includes(this.nomeIF)) {
+      // ✅ Filtra instituições externas (não da Rede Federal)
+      if (inst && !this.isRedeFedera(inst)) {
         instituicoes.set(inst, (instituicoes.get(inst) || 0) + 1);
       }
     });
@@ -361,6 +368,12 @@ export class ProducaoCientificaComponent implements OnInit, AfterViewInit {
       total,
       percentual: (total / max) * 100
     }));
+  }
+
+  // ✅ Helper para verificar se é instituição da Rede Federal
+  isRedeFedera(instituicao: string): boolean {
+    const siglas = this.institutosDisponiveis.map(i => i.sigla);
+    return siglas.some(sigla => instituicao.includes(sigla));
   }
 
   getAreasMaisAtivas(): { nome: string; total: number }[] {
@@ -406,12 +419,15 @@ export class ProducaoCientificaComponent implements OnInit, AfterViewInit {
       artigos = artigos.filter(a => a && a.docente_campus === this.filtros.campus);
     }
 
+    campusList.sort();
+
     this.anos = Array.from(
       { length: this.filtros.anoFim - this.filtros.anoInicio + 1 },
       (_, i) => this.filtros.anoInicio + i
     );
 
-    return campusList.map(campus => {
+    // ✅ Gera dados de todos os campus UMA VEZ
+    this.heatmapTodosCampus = campusList.map(campus => {
       const valores = this.anos.map(ano => {
         return artigos.filter(a =>
           a && a.docente_campus === campus && a.artigo_ano === ano
@@ -420,6 +436,18 @@ export class ProducaoCientificaComponent implements OnInit, AfterViewInit {
 
       return { campus, valores };
     });
+
+    // ✅ Calcula total de páginas
+    this.heatmapTotalPaginas = Math.ceil(this.heatmapTodosCampus.length / this.heatmapItensPorPagina);
+
+    // ✅ Reseta para página 1 quando aplicar filtros
+    this.heatmapPaginaAtual = 1;
+
+    // ✅ Retorna apenas os itens da página 1
+    const inicio = 0;
+    const fim = this.heatmapItensPorPagina;
+
+    return this.heatmapTodosCampus.slice(inicio, fim);
   }
 
   getKPIs(): { indiceColaboracao: number; crescimentoAnual: number; interdisciplinaridade: number } {
@@ -461,6 +489,26 @@ export class ProducaoCientificaComponent implements OnInit, AfterViewInit {
   aplicarFiltros(): void {
     console.log('🔍 Aplicando filtros:', this.filtros);
 
+    // ✅ Atualiza siglaIF e nomeIF baseado no filtro
+    this.siglaIF = this.filtros.instituto !== 'todos' ? this.filtros.instituto : null;
+
+    if (this.filtros.instituto !== 'todos') {
+      const instituto = this.institutosDisponiveis.find(i => i.sigla === this.filtros.instituto);
+      this.nomeIF = instituto ? instituto.nome : this.filtros.instituto;
+    } else {
+      this.nomeIF = 'Rede Federal de Educação';
+    }
+
+    // ✅ Atualiza campus disponíveis baseado no IF selecionado
+    this.carregarCampusDisponiveis();
+
+    // ✅ Reseta filtro de campus se mudou o IF
+    if (this.filtros.instituto !== 'todos' && this.filtros.campus !== 'todos') {
+      if (!this.campusDisponiveis.includes(this.filtros.campus)) {
+        this.filtros.campus = 'todos';
+      }
+    }
+
     this.top10Produtores = this.getTop10Produtores();
     this.colaboracoesExternas = this.getColaboracoesExternas();
     this.areasMaisAtivas = this.getAreasMaisAtivas();
@@ -477,5 +525,34 @@ export class ProducaoCientificaComponent implements OnInit, AfterViewInit {
     const g = Math.floor(169 - (69 * intensity));
     const b = Math.floor(206 - (56 * intensity));
     return `rgb(${r}, ${g}, ${b})`;
+  }
+
+  mudarPaginaHeatmap(pagina: number): void {
+    if (pagina >= 1 && pagina <= this.heatmapTotalPaginas) {
+      this.heatmapPaginaAtual = pagina;
+
+      // ✅ Atualiza APENAS o heatmap, sem recalcular tudo
+      const inicio = (this.heatmapPaginaAtual - 1) * this.heatmapItensPorPagina;
+      const fim = inicio + this.heatmapItensPorPagina;
+      this.heatmapData = this.heatmapTodosCampus.slice(inicio, fim);
+    }
+  }
+
+  getPaginasHeatmap(): number[] {
+    const paginas: number[] = [];
+    const maxPaginas = 5; // Mostra no máximo 5 botões de página
+
+    let inicio = Math.max(1, this.heatmapPaginaAtual - Math.floor(maxPaginas / 2));
+    const fim = Math.min(this.heatmapTotalPaginas, inicio + maxPaginas - 1);
+
+    if (fim - inicio < maxPaginas - 1) {
+      inicio = Math.max(1, fim - maxPaginas + 1);
+    }
+
+    for (let i = inicio; i <= fim; i++) {
+      paginas.push(i);
+    }
+
+    return paginas;
   }
 }

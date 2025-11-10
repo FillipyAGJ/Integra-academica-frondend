@@ -1,10 +1,10 @@
 import { ChangeDetectionStrategy, Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
-import { NavigationEnd, Router, RouterLink } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { Subject, filter, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-menu-geral',
-  imports: [RouterLink],
+  imports: [RouterLink, RouterLinkActive],
   templateUrl: './menu-geral.component.html',
   styleUrl: './menu-geral.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -14,18 +14,10 @@ export class MenuGeralComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   isHome = signal(false);
-  sigla = signal<string | null>(null);
 
   ngOnInit(): void {
     const setFlag = (url: string) => {
-      this.isHome.set((url === '/home' || url === '/'));
-
-      const match = url.match(/\/dashboard\/([^/]+)/);
-      if (match) {
-        this.sigla.set(match[1]); // 👈 E ESTE BLOCO
-      } else {
-        this.sigla.set(null);
-      }
+      this.isHome.set((url === '/' || url === '/dashboard'));
     };
 
     setFlag(this.router.url);
@@ -33,10 +25,8 @@ export class MenuGeralComponent implements OnInit, OnDestroy {
     this.router.events
       .pipe(filter(e => e instanceof NavigationEnd), takeUntil(this.destroy$))
       .subscribe((e: NavigationEnd) => {
-        setFlag(e.urlAfterRedirects)
-        console.log(e)
-      }
-      );
+        setFlag(e.urlAfterRedirects);
+      });
   }
 
   ngOnDestroy() {

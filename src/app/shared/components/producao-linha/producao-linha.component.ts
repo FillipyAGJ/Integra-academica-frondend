@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, OnInit, OnChanges, SimpleChanges, Input, inject, signal, DestroyRef } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import type { EChartsCoreOption } from 'echarts/core';
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import * as echarts from 'echarts/core';
@@ -29,12 +30,20 @@ export class ProducaoLinhaComponent implements OnInit, OnChanges {
 
   private destroyRef = inject(DestroyRef);
   private docentesService = inject(DocentesService);
+  private route = inject(ActivatedRoute); // ✅ ADICIONADO
 
   options = signal<EChartsCoreOption>({});
   loading = signal(true);
 
   ngOnInit(): void {
     console.log('🎬 ngOnInit chamado');
+
+    // ✅ Se siglaIF não foi passada via @Input, tenta pegar da rota
+    if (!this.siglaIF) {
+      this.siglaIF = this.route.snapshot.paramMap.get('sigla') || 'todos';
+    }
+
+    console.log('📍 siglaIF definida como:', this.siglaIF);
     this.carregarDadosGrafico();
   }
 
@@ -49,13 +58,17 @@ export class ProducaoLinhaComponent implements OnInit, OnChanges {
     console.log('🔄 carregarDadosGrafico INICIADO');
     console.log('📍 siglaIF atual:', this.siglaIF);
 
+    // ✅ Garante que siglaIF nunca seja undefined
     if (!this.siglaIF) {
-      console.warn('⚠️ siglaIF não definida - ABORTANDO');
-      this.loading.set(false);
-      return;
+      this.siglaIF = 'todos';
     }
 
-    console.log('✅ siglaIF válida, iniciando requisição...');
+    if (this.siglaIF === 'todos') {
+      console.log('🟢 Carregando dados de todos os IFs');
+    } else {
+      console.log('🔵 Carregando dados do IF:', this.siglaIF);
+    }
+
     this.loading.set(true);
 
     console.log('📡 Chamando docentesService.carregarTodosDados()...');
@@ -74,7 +87,10 @@ export class ProducaoLinhaComponent implements OnInit, OnChanges {
         next: (data) => {
           console.log('✅ NEXT CHAMADO - Dados recebidos:', data);
 
-          const producaoPorAno: ProducaoPorAno[] = this.docentesService.getProducaoPorAno(this.siglaIF!);
+          // ✅ Passa undefined se for 'todos', senão passa a sigla
+          const siglaParaBusca = this.siglaIF === 'todos' ? undefined : this.siglaIF!;
+          const producaoPorAno: ProducaoPorAno[] = this.docentesService.getProducaoPorAno(siglaParaBusca);
+
           console.log('📊 Produção por ano retornada:', producaoPorAno);
 
           if (!producaoPorAno || producaoPorAno.length === 0) {
@@ -83,7 +99,7 @@ export class ProducaoLinhaComponent implements OnInit, OnChanges {
             return;
           }
 
-          // ✅ CORREÇÃO: Filtrar valores nulos e converter com segurança
+          // ✅ Filtrar valores nulos e converter com segurança
           const dadosFiltrados = producaoPorAno.filter(p => p.ano != null);
 
           const anos = dadosFiltrados.map(p => String(p.ano));

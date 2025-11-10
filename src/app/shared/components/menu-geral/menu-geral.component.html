@@ -1,5 +1,5 @@
 <div class="menu">
-  <a [routerLink]="['/home']">
+  <a [routerLink]="['/']">
     <div class="logo-area">
       <img src="icon-social-network.svg" alt="" />
 
@@ -10,21 +10,19 @@
     </div>
   </a>
 
-  @if (!isHome()) {
   <nav class="nav-menu">
-    @if (sigla(); as s) {
-    <a [routerLink]="['/dashboard', s]">Início</a>
-    } @if (sigla(); as s) {
-    <a [routerLink]="['/dashboard', s, 'busca-docentes']">Buscar Docentes</a>
-    } @if (sigla(); as s) {
-    <a [routerLink]="['/dashboard', s, 'producao-cientifica']"
-      >Painel Científica</a
+    <a
+      [routerLink]="['/']"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      >Início</a
     >
-    } @if (sigla(); as s) {
-    <a [routerLink]="['/dashboard', s, 'temas-tendencias']"
-      >Temas e Tendências</a
+    <a [routerLink]="['/busca-docentes']" routerLinkActive="active"
+      >Buscar Docentes</a
     >
-    }
+    <a [routerLink]="['/producao-cientifica']" routerLinkActive="active"
+      >Produção Científica</a
+    >
+    <a [routerLink]="['/comparacao']" routerLinkActive="active">Comparação</a>
   </nav>
-  }
 </div>

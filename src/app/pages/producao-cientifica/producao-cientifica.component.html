@@ -1,3 +1,4 @@
+<!-- producao-cientifica.component.html -->
 <!-- Loading -->
 @if (carregando) {
 <div class="loading">
@@ -11,18 +12,44 @@
 <div class="container">
   <!-- Título -->
   <div class="page-title">
-    <h1>📊 Produção Científica do {{ siglaIF || "IF" }}</h1>
-    <p>Análise e visualização dos dados acadêmicos dos docentes</p>
+    <h1>
+      📊 Produção Científica
+      {{ filtros.instituto !== "todos" ? "do " + nomeIF : "da Rede Federal" }}
+    </h1>
+    <p>
+      Análise e visualização dos dados acadêmicos
+      {{
+        filtros.instituto !== "todos"
+          ? "dos docentes do " + filtros.instituto
+          : "de todos os Institutos Federais"
+      }}
+    </p>
   </div>
 
   <!-- Filtros -->
   <div class="filters">
+    <!-- ✅ NOVO: Filtro de Instituto -->
+    <div class="filter-group">
+      <label for="instituto">Instituto:</label>
+      <select
+        id="instituto"
+        [(ngModel)]="filtros.instituto"
+        (change)="aplicarFiltros()"
+      >
+        <option value="todos">Todos os IFs</option>
+        @for (inst of institutosDisponiveis; track inst.sigla) {
+        <option [value]="inst.sigla">{{ inst.sigla }}</option>
+        }
+      </select>
+    </div>
+
     <div class="filter-group">
       <label for="campus">Campus:</label>
       <select
         id="campus"
         [(ngModel)]="filtros.campus"
         (change)="aplicarFiltros()"
+        [disabled]="filtros.instituto === 'todos'"
       >
         <option value="todos">Todos</option>
         @for (campus of campusDisponiveis; track campus) { @if (campus !==
@@ -37,7 +64,7 @@
       <input
         id="anoInicio"
         type="number"
-        min="2015"
+        min="1990"
         max="2024"
         [(ngModel)]="filtros.anoInicio"
         (change)="aplicarFiltros()"
@@ -49,7 +76,7 @@
       <input
         id="anoFim"
         type="number"
-        min="2015"
+        min="1990"
         max="2024"
         [(ngModel)]="filtros.anoFim"
         (change)="aplicarFiltros()"
@@ -63,115 +90,159 @@
     <div class="chart-wrapper">
       <canvas #evolutionChart id="evolutionChart"></canvas>
     </div>
+  </div>
 
-    <!-- Cards de Informações -->
-    <div class="info-cards">
-      <!-- Top 10 Produtores -->
-      <div class="card">
-        <h3>🏆 Top 10 Produtores</h3>
-        <div class="ranking-list">
-          @for (docente of top10Produtores; track docente.nome; let i = $index)
-          {
-          <div class="ranking-item">
-            <span class="rank">{{ i + 1 }}.</span>
-            <span class="name">{{ docente.nome }}</span>
-            <span class="count">{{ docente.total }}</span>
-          </div>
-          }
-        </div>
-      </div>
-
-      <!-- Colaborações Externas -->
-      <div class="card">
-        <h3>🌍 Colaborações Externas</h3>
-        <div class="collab-list">
-          @for (inst of colaboracoesExternas; track inst.nome) {
-          <div class="collab-item">
-            <span class="inst-name">{{ inst.nome }}</span>
-            <div class="progress-bar">
-              <div
-                class="progress-fill"
-                [style.width.%]="inst.percentual"
-              ></div>
-            </div>
-            <span class="inst-count">{{ inst.total }}</span>
-          </div>
-          }
-        </div>
-      </div>
-
-      <!-- Áreas Mais Ativas -->
-      <div class="card">
-        <h3>📊 Áreas Mais Ativas</h3>
-        <div class="areas-list">
-          @for (area of areasMaisAtivas; track area.nome) {
-          <div class="area-item">
-            <span class="area-name">{{ area.nome }}</span>
-            <span class="area-badge">{{ area.total }}</span>
-          </div>
-          }
-        </div>
-      </div>
-    </div>
-
-    <!-- Heatmap -->
-    <div class="chart-container">
-      <h2>🔥 Produção por Campus x Ano</h2>
-      <div class="heatmap">
-        @for (campus of heatmapData; track campus.campus) {
-        <div class="heatmap-row">
-          <div class="heatmap-label">{{ campus.campus }}</div>
-          <div class="heatmap-cells">
-            @for (valor of campus.valores; track $index) {
-            <div
-              class="heatmap-cell"
-              [style.background-color]="getHeatmapColor(valor)"
-              [title]="valor + ' publicações'"
-            >
-              {{ valor }}
-            </div>
-            }
-          </div>
+  <!-- Cards de Informações -->
+  <div class="info-cards">
+    <!-- Top 10 Produtores -->
+    <div class="card">
+      <h3>🏆 Top 10 Produtores</h3>
+      <div class="ranking-list">
+        @if (top10Produtores.length === 0) {
+        <p class="no-data">Nenhum dado disponível</p>
+        } @for (docente of top10Produtores; track docente.nome; let i = $index)
+        {
+        <div class="ranking-item">
+          <span class="rank">{{ i + 1 }}.</span>
+          <span class="name">{{ docente.nome }}</span>
+          <span class="count">{{ docente.total }}</span>
         </div>
         }
-        <div class="heatmap-years">
-          @for (ano of anos; track ano) {
-          <span>{{ ano }}</span>
+      </div>
+    </div>
+
+    <!-- Colaborações Externas -->
+    <div class="card">
+      <h3>🌍 Colaborações Externas</h3>
+      <div class="collab-list">
+        @if (colaboracoesExternas.length === 0) {
+        <p class="no-data">Nenhum dado disponível</p>
+        } @for (inst of colaboracoesExternas; track inst.nome) {
+        <div class="collab-item">
+          <span class="inst-name">{{ inst.nome }}</span>
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="inst.percentual"></div>
+          </div>
+          <span class="inst-count">{{ inst.total }}</span>
+        </div>
+        }
+      </div>
+    </div>
+
+    <!-- Áreas Mais Ativas -->
+    <div class="card">
+      <h3>📊 Áreas Mais Ativas</h3>
+      <div class="areas-list">
+        @if (areasMaisAtivas.length === 0) {
+        <p class="no-data">Nenhum dado disponível</p>
+        } @for (area of areasMaisAtivas; track area.nome) {
+        <div class="area-item">
+          <span class="area-name">{{ area.nome }}</span>
+          <span class="area-badge">{{ area.total }}</span>
+        </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Heatmap -->
+  <div class="chart-container">
+    <h2>🔥 Produção por Campus x Ano</h2>
+    @if (heatmapData.length === 0) {
+    <p class="no-data">Nenhum dado disponível para o heatmap</p>
+    } @else {
+    <div class="heatmap">
+      @for (campus of heatmapData; track campus.campus) {
+      <div class="heatmap-row">
+        <div class="heatmap-label">{{ campus.campus }}</div>
+        <div class="heatmap-cells">
+          @for (valor of campus.valores; track $index) {
+          <div
+            class="heatmap-cell"
+            [style.background-color]="getHeatmapColor(valor)"
+            [title]="valor + ' publicações'"
+          >
+            {{ valor }}
+          </div>
           }
+        </div>
+      </div>
+      }
+      <div class="heatmap-years">
+        @for (ano of anos; track ano) {
+        <span>{{ ano }}</span>
+        }
+      </div>
+    </div>
+
+    <!-- Paginação -->
+    @if (heatmapTotalPaginas > 1) {
+    <div class="pagination">
+      <button
+        class="pagination-btn"
+        [disabled]="heatmapPaginaAtual === 1"
+        (click)="mudarPaginaHeatmap(heatmapPaginaAtual - 1)"
+      >
+        ← Anterior
+      </button>
+
+      @for (pagina of getPaginasHeatmap(); track pagina) {
+      <button
+        class="pagination-btn"
+        [class.active]="pagina === heatmapPaginaAtual"
+        (click)="mudarPaginaHeatmap(pagina)"
+      >
+        {{ pagina }}
+      </button>
+      }
+
+      <button
+        class="pagination-btn"
+        [disabled]="heatmapPaginaAtual === heatmapTotalPaginas"
+        (click)="mudarPaginaHeatmap(heatmapPaginaAtual + 1)"
+      >
+        Próxima →
+      </button>
+
+      <span class="pagination-info">
+        Página {{ heatmapPaginaAtual }} de {{ heatmapTotalPaginas }} ({{
+          heatmapTodosCampus.length
+        }}
+        campus)
+      </span>
+    </div>
+    } }
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-cards">
+    <div class="kpi-card">
+      <div class="kpi-icon">🎯</div>
+      <div class="kpi-content">
+        <div class="kpi-label">Índice de Colaboração</div>
+        <div class="kpi-value">
+          {{ kpis.indiceColaboracao }} <span>autores/artigo</span>
         </div>
       </div>
     </div>
 
-    <!-- KPIs -->
-    <div class="kpi-cards">
-      <div class="kpi-card">
-        <div class="kpi-icon">🎯</div>
-        <div class="kpi-content">
-          <div class="kpi-label">Índice de Colaboração</div>
-          <div class="kpi-value">
-            {{ kpis.indiceColaboracao }} <span>autores/artigo</span>
-          </div>
+    <div class="kpi-card">
+      <div class="kpi-icon">📈</div>
+      <div class="kpi-content">
+        <div class="kpi-label">Crescimento Anual</div>
+        <div class="kpi-value">
+          {{ kpis.crescimentoAnual > 0 ? "+" : "" }}{{ kpis.crescimentoAnual }}%
+          <span>vs ano anterior</span>
         </div>
       </div>
+    </div>
 
-      <div class="kpi-card">
-        <div class="kpi-icon">📈</div>
-        <div class="kpi-content">
-          <div class="kpi-label">Crescimento Anual</div>
-          <div class="kpi-value">
-            {{ kpis.crescimentoAnual > 0 ? "+" : ""
-            }}{{ kpis.crescimentoAnual }}% <span>vs ano anterior</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-icon">🌐</div>
-        <div class="kpi-content">
-          <div class="kpi-label">Interdisciplinaridade</div>
-          <div class="kpi-value">
-            {{ kpis.interdisciplinaridade }}% <span>dos docentes</span>
-          </div>
+    <div class="kpi-card">
+      <div class="kpi-icon">🌐</div>
+      <div class="kpi-content">
+        <div class="kpi-label">Interdisciplinaridade</div>
+        <div class="kpi-value">
+          {{ kpis.interdisciplinaridade }}% <span>dos docentes</span>
         </div>
       </div>
     </div>

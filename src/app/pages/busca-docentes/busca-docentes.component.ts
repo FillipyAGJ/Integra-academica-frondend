@@ -19,6 +19,7 @@ interface SelectOption {
 interface BuscaDocentesForm {
   busca_palavra_chave: FormControl<string | null>;
   campus: FormControl<string | null>;
+  instituto: FormControl<string | null>;
   titulacao: FormControl<string | null>;
   areaDeAtuacao: FormControl<string | null>;
 }
@@ -59,6 +60,7 @@ export class BuscaDocentesComponent implements OnInit {
   form: FormGroup<BuscaDocentesForm>;
 
   // Options para os selects
+  institutoOptions: SelectOption[] = [];
   campusOptions: SelectOption[] = [];
   titulacaoOptions: SelectOption[] = [
     { value: '', label: 'Todas' },
@@ -85,6 +87,7 @@ export class BuscaDocentesComponent implements OnInit {
   constructor() {
     this.form = this.fb.group<BuscaDocentesForm>({
       busca_palavra_chave: this.fb.control(''),
+      instituto: this.fb.control(''), // ✅ Novo campo
       campus: this.fb.control(''),
       titulacao: this.fb.control(''),
       areaDeAtuacao: this.fb.control('')
@@ -128,6 +131,12 @@ export class BuscaDocentesComponent implements OnInit {
 
   // ✅ Melhorar a limpeza e formatação das palavras-chave
   popularOpcoes(docentes: Docente[]): void {
+    const institutosUnicos = [...new Set(docentes.map(d => d.sigla_if).filter(i => i))].sort();
+    this.institutoOptions = [
+      { value: '', label: 'Todos' },
+      ...institutosUnicos.map(i => ({ value: i, label: i }))
+    ];
+
     // Campus
     const campusUnicos = [...new Set(docentes.map(d => d.campus).filter(c => c))].sort();
     this.campusOptions = [
@@ -192,6 +201,10 @@ export class BuscaDocentesComponent implements OnInit {
         }
       }
 
+      if (valores.instituto) {
+        resultados = resultados.filter(d => d.sigla_if === valores.instituto);
+      }
+
       // Filtro por campus
       if (valores.campus) {
         resultados = resultados.filter(d => d.campus === valores.campus);
@@ -225,6 +238,7 @@ export class BuscaDocentesComponent implements OnInit {
   limparFiltros(): void {
     this.form.reset({
       busca_palavra_chave: '',
+      instituto: '', // ✅ Adicionar
       campus: '',
       titulacao: '',
       areaDeAtuacao: ''
@@ -275,7 +289,6 @@ export class BuscaDocentesComponent implements OnInit {
   }
 
   verPerfil(docenteId: number): void {
-    const sigla = this.route.snapshot.paramMap.get('sigla');
-    this.router.navigate(['/dashboard', sigla, 'busca-docentes', 'perfil', docenteId]);
+    this.router.navigate(['/busca-docentes/perfil', docenteId]);
   }
 }

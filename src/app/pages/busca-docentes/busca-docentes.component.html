@@ -17,6 +17,23 @@
         </z-form-control>
       </z-form-field>
 
+      <z-form-field>
+        <z-form-control>
+          <z-select
+            id="instituto"
+            formControlName="instituto"
+            zPlaceholder="Instituto Federal"
+            class="input-g"
+          >
+            @for (instituto of institutoOptions; track instituto.value) {
+            <z-select-item [zValue]="instituto.value">{{
+              instituto.label
+            }}</z-select-item>
+            }
+          </z-select>
+        </z-form-control>
+      </z-form-field>
+
       <div class="campus-titulacao">
         <z-form-field>
           <z-form-control>
