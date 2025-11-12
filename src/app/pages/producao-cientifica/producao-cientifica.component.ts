@@ -41,7 +41,7 @@ export class ProducaoCientificaComponent implements OnInit, AfterViewInit {
   filtros = {
     instituto: 'todos',
     campus: 'todos',
-    anoInicio: 1990,
+    anoInicio: 1998,
     anoFim: 2024
   };
 
