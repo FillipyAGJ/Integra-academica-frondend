@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@ang
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { InformacaoIntegraComponent } from '@shared/components/Informacao-Integra/Informacao-Integra.component';
+// import { InformacaoIntegraComponent } from '@shared/components/Informacao-Integra/Informacao-Integra.component';
 import { DocentesService } from 'src/app/core/services/docentes.service';
 
 // Interface local para o docente (baseada nos CSVs)
@@ -58,7 +58,7 @@ interface EstatisticasIF {
 @Component({
   selector: 'app-comparacao',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, InformacaoIntegraComponent],
+  imports: [CommonModule, RouterLink, FormsModule],
   templateUrl: './comparacao.html',
   styleUrl: './comparacao.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

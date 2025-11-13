@@ -1,0 +1,132 @@
+<div class="ranking-wrap">
+  <header class="ranking-header">
+    <h1 class="title">Ranking Acadêmico IFB</h1>
+    <p class="subtitle">
+      Compare docentes, campi e instituições da Rede a partir de indicadores de produção científica.
+    </p>
+
+    <div class="controls">
+      <div class="control-group">
+        <label for="tipo">Ranking por</label>
+        <select id="tipo" [(ngModel)]="filtroTipo">
+          <option *ngFor="let t of tipos" [value]="t">{{ t }}</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label for="ordenacao">Ordenar por</label>
+        <select id="ordenacao" [(ngModel)]="filtroOrdenacao">
+          <option *ngFor="let o of ordenacoes" [value]="o">{{ o }}</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label for="ano">Ano</label>
+        <select id="ano" [(ngModel)]="filtroAno">
+          <option *ngFor="let a of anos" [value]="a">{{ a }}</option>
+        </select>
+      </div>
+
+      <button class="btn-export" (click)="exportRanking()">Exportar ranking</button>
+    </div>
+  </header>
+
+  <!-- RANKING POR DOCENTES -->
+  <section class="section">
+    <h2 class="section-title">Ranking por Docentes</h2>
+
+    <div class="cards">
+      <article class="card" *ngFor="let d of docentes; let i = index">
+        <div class="card-left">
+          <div class="avatar-wrap">
+            <img [src]="d.avatar || 'assets/avatars/default.png'" alt="{{ d.name }}" />
+            <div class="badge">{{ i + 1 }}</div>
+          </div>
+          <div class="meta">
+            <div class="name">{{ d.name }}</div>
+            <div class="campus">{{ d.campus }}</div>
+          </div>
+        </div>
+
+        <div class="card-middle">
+          <div class="producoes">
+            <div class="label">Produções</div>
+            <div class="value">{{ d.producoes }}</div>
+            <div class="dots">
+              <span class="dot green" *ngIf="d.producoesDetalhe?.artigos"></span>
+              <span class="dot orange" *ngIf="d.producoesDetalhe?.orientacoes"></span>
+              <span class="dot gray" *ngIf="d.producoesDetalhe?.outras"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-right">
+          <div class="indice">
+            <div class="label">Índice</div>
+            <div class="value big">{{ d.indice }}%</div>
+          </div>
+          <button class="btn-primary" (click)="verPerfil(d.id)">Ver perfil</button>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- RANKING POR CAMPUS -->
+  <section class="section">
+    <h2 class="section-title">Ranking por Campus</h2>
+
+    <div class="campus-grid">
+      <div class="campus-list card-box">
+        <div class="campus-row" *ngFor="let c of campi">
+          <div class="campus-name">{{ c.nome }}</div>
+          <div class="bar-wrap" aria-hidden="true">
+            <div class="bar" [style.width.%]="c.score"></div>
+            <div class="bar-bg" [style.width.%]="100 - c.score"></div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="campus-right card-box">
+        <div class="right-title">Colaboração Média</div>
+        <div class="right-item" *ngFor="let c of campi | slice:0:4">
+          <div class="right-percent">{{ c.colaboracao }}%</div>
+          <div class="right-tags">
+            <span class="tag" *ngFor="let t of c.tags">{{ t }}</span>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- RANKING POR INSTITUIÇÃO -->
+  <section class="section">
+    <h2 class="section-title">Ranking por Instituição</h2>
+
+    <div class="table card-box">
+      <table>
+        <thead>
+          <tr>
+            <th>Instituição</th>
+            <th>Total produções</th>
+            <th>Produção por docente</th>
+            <th>Mais produtiva em</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let ins of instituicoes">
+            <td>{{ ins.nome }}</td>
+            <td>{{ ins.totalProducoes }}</td>
+            <td>{{ ins.producaoPorDocente }}</td>
+            <td>
+              <span class="tag" *ngFor="let t of ins.topArea">{{ t }}</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <p class="footer-note">
+    Promover a ciência é também reconhecer quem a constrói todos os dias.
+  </p>
+</div>
