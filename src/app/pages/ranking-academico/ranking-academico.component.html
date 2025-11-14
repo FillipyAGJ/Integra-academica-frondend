@@ -7,21 +7,18 @@
 
     <div class="controls">
       <div class="control-group">
-        <label for="tipo">Ranking por</label>
         <select id="tipo" [(ngModel)]="filtroTipo">
           <option *ngFor="let t of tipos" [value]="t">{{ t }}</option>
         </select>
       </div>
 
       <div class="control-group">
-        <label for="ordenacao">Ordenar por</label>
         <select id="ordenacao" [(ngModel)]="filtroOrdenacao">
           <option *ngFor="let o of ordenacoes" [value]="o">{{ o }}</option>
         </select>
       </div>
 
       <div class="control-group">
-        <label for="ano">Ano</label>
         <select id="ano" [(ngModel)]="filtroAno">
           <option *ngFor="let a of anos" [value]="a">{{ a }}</option>
         </select>
@@ -31,78 +28,104 @@
     </div>
   </header>
 
-  <!-- RANKING POR DOCENTES -->
-  <section class="section">
-    <h2 class="section-title">Ranking por Docentes</h2>
-
-    <div class="cards">
-      <article class="card" *ngFor="let d of docentes; let i = index">
-        <div class="card-left">
-          <div class="avatar-wrap">
-            <img [src]="d.avatar || 'assets/avatars/default.png'" alt="{{ d.name }}" />
-            <div class="badge">{{ i + 1 }}</div>
-          </div>
-          <div class="meta">
-            <div class="name">{{ d.name }}</div>
-            <div class="campus">{{ d.campus }}</div>
-          </div>
-        </div>
-
-        <div class="card-middle">
-          <div class="producoes">
-            <div class="label">Produções</div>
-            <div class="value">{{ d.producoes }}</div>
-            <div class="dots">
-              <span class="dot green" *ngIf="d.producoesDetalhe?.artigos"></span>
-              <span class="dot orange" *ngIf="d.producoesDetalhe?.orientacoes"></span>
-              <span class="dot gray" *ngIf="d.producoesDetalhe?.outras"></span>
+  <!-- LAYOUT EM GRID - 2 COLUNAS -->
+  <section class="section grid-layout">
+    <!-- COLUNA 1: RANKING POR DOCENTES -->
+    <div class="section-content">
+      <h2 class="section-title">Ranking por Docentes</h2>
+      <div class="cards">
+        <article class="card" *ngFor="let d of docentes; let i = index">
+          <div class="card-left">
+            <div class="avatar-wrap">
+              <img [src]="d.avatar || 'assets/avatars/default.png'" alt="{{ d.name }}" />
+              <div class="badge">{{ i + 1 }}</div>
+            </div>
+            <div class="meta">
+              <div class="name">{{ d.name }}</div>
+              <div class="campus">{{ d.campus }}</div>
             </div>
           </div>
-        </div>
 
-        <div class="card-right">
-          <div class="indice">
-            <div class="label">Índice</div>
-            <div class="value big">{{ d.indice }}%</div>
+          <div class="card-middle">
+            <div class="producoes">
+              <div class="label">Produções</div>
+              <div class="value">{{ d.producoes }}</div>
+              <div class="dots">
+                <span class="dot green" *ngIf="d.producoesDetalhe?.artigos"></span>
+                <span class="dot orange" *ngIf="d.producoesDetalhe?.orientacoes"></span>
+                <span class="dot gray" *ngIf="d.producoesDetalhe?.outras"></span>
+              </div>
+            </div>
           </div>
-          <button class="btn-primary" (click)="verPerfil(d.id)">Ver perfil</button>
-        </div>
-      </article>
+
+          <div class="card-right">
+            <div class="indice">
+              <div class="label">Índice</div>
+              <div class="value big">{{ d.indice }}%</div>
+            </div>
+            <button class="btn-primary" (click)="verPerfil(d.id)">Ver perfil</button>
+          </div>
+        </article>
+      </div>
     </div>
-  </section>
 
-  <!-- RANKING POR CAMPUS -->
-  <section class="section">
-    <h2 class="section-title">Ranking por Campus</h2>
-
-    <div class="campus-grid">
-      <div class="campus-list card-box">
+    <!-- COLUNA 2: RANKING POR CAMPUS -->
+    <div class="section-content">
+      <h2 class="section-title">Ranking por Campus</h2>
+      <div class="campus-list-full">
         <div class="campus-row" *ngFor="let c of campi">
           <div class="campus-name">{{ c.nome }}</div>
           <div class="bar-wrap" aria-hidden="true">
             <div class="bar" [style.width.%]="c.score"></div>
-            <div class="bar-bg" [style.width.%]="100 - c.score"></div>
+          </div>
+          <div class="campus-score">{{ c.score }}%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUNA 3: RANKING POR ÁREAS DO CONHECIMENTO -->
+    <div class="section-content">
+      <h2 class="section-title">Ranking por Áreas do Conhecimento</h2>
+      <div class="areas-container">
+        <div class="area-card" *ngFor="let area of areas; let i = index">
+          <div class="area-header">
+            <div class="area-icon" [style.background]="area.cor">
+              <span class="area-emoji">{{ area.emoji }}</span>
+            </div>
+            <div class="area-info">
+              <div class="area-nome">{{ area.nome }}</div>
+              <div class="area-subtitle">{{ area.subtitulo }}</div>
+            </div>
+            <div class="area-ranking">
+              <span class="ranking-badge">{{ i + 1 }}º</span>
+            </div>
+          </div>
+          <div class="area-stats">
+            <div class="stat-item">
+              <div class="stat-label">Publicações</div>
+              <div class="stat-value">{{ area.publicacoes }}</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">Docentes</div>
+              <div class="stat-value">{{ area.docentes }}</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">Crescimento</div>
+              <div class="stat-value growth" [class.positive]="area.crescimento > 0">
+                {{ area.crescimento > 0 ? '+' : '' }}{{ area.crescimento }}%
+              </div>
+            </div>
           </div>
         </div>
       </div>
-
-      <aside class="campus-right card-box">
-        <div class="right-title">Colaboração Média</div>
-        <div class="right-item" *ngFor="let c of campi | slice:0:4">
-          <div class="right-percent">{{ c.colaboracao }}%</div>
-          <div class="right-tags">
-            <span class="tag" *ngFor="let t of c.tags">{{ t }}</span>
-          </div>
-        </div>
-      </aside>
     </div>
   </section>
 
-  <!-- RANKING POR INSTITUIÇÃO -->
+  <!-- RANKING POR INSTITUIÇÃO - LARGURA TOTAL -->
   <section class="section">
     <h2 class="section-title">Ranking por Instituição</h2>
 
-    <div class="table card-box">
+    <div class="table">
       <table>
         <thead>
           <tr>
@@ -125,8 +148,4 @@
       </table>
     </div>
   </section>
-
-  <p class="footer-note">
-    Promover a ciência é também reconhecer quem a constrói todos os dias.
-  </p>
 </div>

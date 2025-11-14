@@ -1,11 +1,19 @@
+
+
 :host {
   width: 100%;
   padding: 8px 16px;
 
   color: #fff;
   // box-shadow: 0 1px 4px #00b4d8;
-  background-color: #0b61e6;
+  background-color: #2795f5;
 }
+// .logo{
+//   width: auto;
+//   // height: 100px
+//   max-height: 50px;
+//   object-fit: contain;
+// }
 
 .menu {
   display: flex;
@@ -21,13 +29,14 @@
   font-size: 1.6em;
   margin: 0;
   line-height: 1.1;
+  font-size: 40px;
 }
 
 .nav-menu {
   margin-left: auto;
-  margin-right: 8rem;
+  margin-right: 4rem;
   display: flex;
   align-items: center;
   gap: 32px;
-  font-size: 1.6em;
+  font-size: 1.3em;
 }

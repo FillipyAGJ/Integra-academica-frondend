@@ -67,4 +67,63 @@ export class RankingAcademicoComponent {
   verPerfil(id: number) {
     console.log('ver perfil', id);
   }
+
+   areas = [
+    {
+      nome: 'Tecnologia da Informação',
+      subtitulo: 'Computação, Sistemas, Redes',
+      emoji: '💻',
+      cor: 'linear-gradient(135deg, #06b6d4, #0891b2)',
+      publicacoes: 156,
+      docentes: 21,
+      crescimento: 22
+    },
+    {
+      nome: 'Ciências Exatas',
+      subtitulo: 'Matemática, Física, Química',
+      emoji: '🔬',
+      cor: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+      publicacoes: 145,
+      docentes: 23,
+      crescimento: 12
+    },
+    {
+      nome: 'Engenharias',
+      subtitulo: 'Civil, Elétrica, Mecânica',
+      emoji: '⚙️',
+      cor: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+      publicacoes: 132,
+      docentes: 19,
+      crescimento: 8
+    },
+    {
+      nome: 'Ciências Humanas',
+      subtitulo: 'História, Sociologia, Filosofia',
+      emoji: '📚',
+      cor: 'linear-gradient(135deg, #10b981, #059669)',
+      publicacoes: 98,
+      docentes: 17,
+      crescimento: -3
+    },
+    {
+      nome: 'Ciências da Saúde',
+      subtitulo: 'Enfermagem, Nutrição, Biomedicina',
+      emoji: '🏥',
+      cor: 'linear-gradient(135deg, #ef4444, #dc2626)',
+      publicacoes: 87,
+      docentes: 15,
+      crescimento: 15
+    },
+    {
+      nome: 'Ciências Agrárias',
+      subtitulo: 'Agronomia, Veterinária',
+      emoji: '🌱',
+      cor: 'linear-gradient(135deg, #84cc16, #65a30d)',
+      publicacoes: 76,
+      docentes: 12,
+      crescimento: 5
+    }
+  ];
+
+  
 }
