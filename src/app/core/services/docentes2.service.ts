@@ -1,16 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/array-type */
 /* eslint-disable @typescript-eslint/consistent-indexed-object-style */
-/* eslint-disable @typescript-eslint/no-inferrable-types */
-// docentes.service.ts - VERSÃO ANGULAR STANDALONE COM SIGNALS (CORRIGIDA)
-import { Injectable, inject, signal, computed } from '@angular/core';
+/* eslint-disable @typescript-eslint/consistent-generic-constructors */
+// docentes-api.service.ts - VERSÃO FINAL CORRIGIDA
+import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, tap, map } from 'rxjs';
+import { Observable, map, tap, catchError, of } from 'rxjs';
 
 // ========================================
 // INTERFACES
 // ========================================
+
 export interface Docente {
   id: number;
+  sigla_if: string;
   slug: string;
   nome: string;
   campus: string;
@@ -19,16 +22,17 @@ export interface Docente {
   nome_completo: string;
   resumo: string;
   palavras_chave: string;
-  anos_no_ifb: number;
+  anos_na_instituicao: number | null;
   teve_gestao: boolean;
   tem_graduacao: boolean;
   tem_mestrado: boolean;
   tem_doutorado: boolean;
   tem_pos_doutorado: boolean;
-  anos_desde_doutorado?: number;
+  anos_desde_doutorado: number | null;
+  anos_desde_pos_doutorado: number | null;
   total_premios: number;
   premiado: boolean;
-  principais_premios?: string;
+  principais_premios: string | null;
   total_artigos: number;
   total_orientacoes_mestrado: number;
   total_orientacoes_doutorado: number;
@@ -40,266 +44,392 @@ export interface Docente {
   diversidade_colaboracao: number;
   interdisciplinar: boolean;
   total_areas_diferentes: number;
-  anos_desde_pos_doutorado?: number;
-}
-
-export interface Artigo {
-  titulo: string;
-  ano: number;
-  doi?: string;
-  autores: string[];
-  total_autores: number;
 }
 
 export interface DocenteCompleto extends Docente {
-  artigos_recentes?: Artigo[];
-  formacao?: {
+  artigos_recentes?: Array<{
+    titulo: string;
+    ano: string;
+    doi: string;
+    autores: string[];
+  }>;
+  formacao_detalhada?: {
     graduacoes: any[];
     mestrados: any[];
     doutorados: any[];
+    pos_doutorados: any[];
+  };
+  orientacoes_resumo?: {
+    mestrado: number;
+    doutorado: number;
   };
 }
 
-export interface PaginacaoResponse {
+export interface InstitutoFederal {
+  sigla: string;
+  total_docentes: number;
+  total_campus: number;
+}
+
+export interface Paginacao {
+  pagina: number;
+  limite: number;
+  total: number;
+  total_paginas: number;
+}
+
+export interface RespostaDocentes {
   docentes: Docente[];
-  paginacao: {
-    pagina: number;
-    limite: number;
-    total: number;
-    total_paginas: number;
-  };
+  paginacao: Paginacao;
 }
 
 export interface Estatisticas {
-  total_docentes: number;
-  por_campus: { [campus: string]: number };
+  resumo: {
+    total_docentes: number;
+    total_ifs: number;
+    total_campus: number;
+  };
   formacao: {
-    com_doutorado: number;
+    com_graduacao: number;
     com_mestrado: number;
+    com_doutorado: number;
     com_pos_doutorado: number;
   };
   producao_media: {
     artigos: number;
     orientacoes: number;
+    projetos: number;
     coautores_unicos: number;
   };
   gestao: {
     com_experiencia: number;
+    percentual: number;
   };
+  premios: {
+    docentes_premiados: number;
+    total_premios: number;
+  };
+  distribuicao_por_if?: { [key: string]: number };
 }
+
+export interface ProducaoPorAno {
+  ano: number;
+  artigos: number;
+  trabalhos: number;
+  total: number;
+}
+
+export interface FiltrosDocente {
+  sigla_if?: string;
+  campus?: string;
+  tem_doutorado?: boolean;
+  tem_pos_doutorado?: boolean;
+  premiado?: boolean;
+  min_artigos?: number;
+  limite?: number;
+  pagina?: number;
+}
+
+// ========================================
+// SERVIÇO
+// ========================================
 
 @Injectable({
   providedIn: 'root'
 })
-export class DocentesService {
+export class DocentesApiService {
   private http = inject(HttpClient);
 
-  // 🔧 CONFIGURE A URL DA API AQUI!
-  private apiUrl = 'http://localhost:8000/api';
+  // URL base da API (configurável)
+  private readonly API_URL = 'http://localhost:8000/api';
+
+  // Signals para estado global
+  loading = signal(false);
+  error = signal<string | null>(null);
+
+  // Cache local
+  private cacheIFs: InstitutoFederal[] | null = null;
+  private cacheCampus: Map<string, string[]> = new Map();
 
   // ========================================
-  // SIGNALS - Estado reativo
-  // ========================================
-
-  // Cache de docentes
-  private docentesCache = signal<Docente[]>([]);
-
-  // Campus disponíveis
-  private campusCache = signal<string[]>([]);
-
-  // Estatísticas
-  private estatisticasCache = signal<Estatisticas | null>(null);
-
-  // Loading states
-  private loadingDocentes = signal<boolean>(false);
-  private loadingEstatisticas = signal<boolean>(false);
-
-  // ========================================
-  // COMPUTED SIGNALS - Valores derivados
-  // ========================================
-
-  // Docentes públicos (read-only)
-  docentes = this.docentesCache.asReadonly();
-
-  // Campus públicos (read-only)
-  campus = this.campusCache.asReadonly();
-
-  // Estatísticas públicas (read-only)
-  estatisticas = this.estatisticasCache.asReadonly();
-
-  // Loading states públicos
-  isLoadingDocentes = this.loadingDocentes.asReadonly();
-  isLoadingEstatisticas = this.loadingEstatisticas.asReadonly();
-
-  // Total de docentes (computed)
-  totalDocentes = computed(() => this.docentesCache().length);
-
-  // ========================================
-  // MÉTODOS DA API
+  // INSTITUTOS FEDERAIS
   // ========================================
 
   /**
-   * Lista docentes com paginação e filtros
+   * Lista todos os Institutos Federais disponíveis
    */
-  listarDocentes(
-    campus?: string,
-    temDoutorado?: boolean,
-    pagina: number = 1,
-    limite: number = 50
-  ): Observable<PaginacaoResponse> {
-    let params = new HttpParams()
-      .set('pagina', pagina.toString())
-      .set('limite', limite.toString());
-
-    if (campus) {
-      params = params.set('campus', campus);
-    }
-    if (temDoutorado !== undefined) {
-      params = params.set('tem_doutorado', temDoutorado.toString());
+  listarIFs(): Observable<InstitutoFederal[]> {
+    if (this.cacheIFs) {
+      return of(this.cacheIFs);
     }
 
-    this.loadingDocentes.set(true);
+    this.loading.set(true);
+    this.error.set(null);
 
-    return this.http.get<PaginacaoResponse>(`${this.apiUrl}/docentes`, { params }).pipe(
-      tap(response => {
-        // Atualizar cache (append para paginação)
-        const existing = this.docentesCache();
-        const newIds = new Set(response.docentes.map(d => d.id));
-        const filtered = existing.filter(d => !newIds.has(d.id));
-        this.docentesCache.set([...filtered, ...response.docentes]);
-        this.loadingDocentes.set(false);
-      })
-    );
-  }
-
-  /**
-   * Busca TODOS os docentes (use com cuidado!)
-   */
-  carregarTodosDocentes(): Observable<Docente[]> {
-    this.loadingDocentes.set(true);
-
-    return this.http.get<PaginacaoResponse>(`${this.apiUrl}/docentes`, {
-      params: new HttpParams().set('limite', '500')
-    }).pipe(
-      tap(response => {
-        this.docentesCache.set(response.docentes);
-        this.loadingDocentes.set(false);
+    return this.http.get<{ total_ifs: number; ifs: InstitutoFederal[] }>(`${this.API_URL}/ifs`).pipe(
+      map(response => response.ifs),
+      tap(ifs => {
+        this.cacheIFs = ifs;
+        console.log('✅ IFs carregados:', ifs.length);
       }),
-      map(response => response.docentes)  // ✅ map para extrair apenas os docentes
+      tap(() => this.loading.set(false)),
+      catchError(this.handleError<InstitutoFederal[]>('listarIFs', []))
     );
   }
 
-  /**
-   * Obtém um docente específico com detalhes
-   */
-  obterDocente(id: number): Observable<DocenteCompleto> {
-    return this.http.get<DocenteCompleto>(`${this.apiUrl}/docentes/${id}`);
-  }
+  // ========================================
+  // DOCENTES
+  // ========================================
 
   /**
-   * Obtém artigos de um docente
+   * Lista docentes com filtros e paginação
+   * @param filtros Objeto com filtros opcionais
+   * @returns Observable com lista de docentes e informações de paginação
    */
-  obterArtigos(docenteId: number, limite: number = 20): Observable<{ docente: string; artigos: Artigo[]; total: number }> {
-    const params = new HttpParams().set('limite', limite.toString());
-    return this.http.get<any>(`${this.apiUrl}/docentes/${docenteId}/artigos`, { params });
-  }
+  listarDocentes(filtros: FiltrosDocente = {}): Observable<RespostaDocentes> {
+    this.loading.set(true);
+    this.error.set(null);
 
-  /**
-   * Obtém estatísticas gerais
-   */
-  obterEstatisticas(): Observable<Estatisticas> {
-    this.loadingEstatisticas.set(true);
+    let params = new HttpParams();
 
-    return this.http.get<Estatisticas>(`${this.apiUrl}/estatisticas`).pipe(
-      tap(stats => {
-        this.estatisticasCache.set(stats);
-        this.loadingEstatisticas.set(false);
-      })
-    );
-  }
+    // Adicionar parâmetros apenas se estiverem definidos
+    if (filtros.sigla_if) {
+      params = params.set('sigla_if', filtros.sigla_if);
+    }
+    if (filtros.campus) {
+      params = params.set('campus', filtros.campus);
+    }
+    if (filtros.tem_doutorado !== undefined && filtros.tem_doutorado !== null) {
+      params = params.set('tem_doutorado', String(filtros.tem_doutorado));
+    }
+    if (filtros.tem_pos_doutorado !== undefined && filtros.tem_pos_doutorado !== null) {
+      params = params.set('tem_pos_doutorado', String(filtros.tem_pos_doutorado));
+    }
+    if (filtros.premiado !== undefined && filtros.premiado !== null) {
+      params = params.set('premiado', String(filtros.premiado));
+    }
+    if (filtros.min_artigos !== undefined && filtros.min_artigos !== null) {
+      params = params.set('min_artigos', String(filtros.min_artigos));
+    }
+    if (filtros.limite) {
+      params = params.set('limite', String(filtros.limite));
+    }
+    if (filtros.pagina) {
+      params = params.set('pagina', String(filtros.pagina));
+    }
 
-  /**
-   * Obtém lista de campus
-   */
-  obterCampus(): Observable<string[]> {
-    return this.http.get<{ campus: string[] }>(`${this.apiUrl}/campus`).pipe(
+    return this.http.get<RespostaDocentes>(`${this.API_URL}/docentes`, { params }).pipe(
       tap(response => {
-        this.campusCache.set(response.campus);
+        console.log(`✅ ${response.docentes.length} docentes carregados (página ${response.paginacao.pagina})`);
       }),
-      map(response => response.campus)  // ✅ map para extrair apenas o array
+      tap(() => this.loading.set(false)),
+      catchError(this.handleError<RespostaDocentes>('listarDocentes', {
+        docentes: [],
+        paginacao: { pagina: 1, limite: 50, total: 0, total_paginas: 0 }
+      }))
+    );
+  }
+
+  /**
+   * Busca docente específico por ID
+   */
+  obterDocente(id: number): Observable<DocenteCompleto | null> {
+    this.loading.set(true);
+    this.error.set(null);
+
+    return this.http.get<DocenteCompleto>(`${this.API_URL}/docentes/${id}`).pipe(
+      tap(docente => console.log('✅ Docente carregado:', docente.nome)),
+      tap(() => this.loading.set(false)),
+      catchError(this.handleError<DocenteCompleto | null>('obterDocente', null))
     );
   }
 
   // ========================================
-  // MÉTODOS COM SIGNALS (alternativa async/await)
+  // CAMPUS
   // ========================================
 
   /**
-   * Carrega campus e atualiza o signal
+   * Lista todos os campus (opcionalmente filtrados por IF)
    */
-  async carregarCampusSignal(): Promise<void> {
-    try {
-      const response = await fetch(`${this.apiUrl}/campus`);
-      const data = await response.json();
-      this.campusCache.set(data.campus);
-    } catch (error) {
-      console.error('Erro ao carregar campus:', error);
+  listarCampus(siglaIF?: string): Observable<string[]> {
+    const cacheKey = siglaIF || 'todos';
+
+    if (this.cacheCampus.has(cacheKey)) {
+      return of(this.cacheCampus.get(cacheKey)!);
     }
+
+    let params = new HttpParams();
+    if (siglaIF) params = params.set('sigla_if', siglaIF);
+
+    return this.http.get<{ total: number; campus: string[]; if: string }>(`${this.API_URL}/campus`, { params }).pipe(
+      map(response => response.campus),
+      tap(campus => {
+        this.cacheCampus.set(cacheKey, campus);
+        console.log(`✅ Campus carregados para ${cacheKey}:`, campus.length);
+      }),
+      catchError(this.handleError<string[]>('listarCampus', []))
+    );
   }
 
   /**
-   * Carrega estatísticas e atualiza o signal
+   * Lista campus de um IF específico (atalho)
    */
-  async carregarEstatisticasSignal(): Promise<void> {
-    this.loadingEstatisticas.set(true);
-    try {
-      const response = await fetch(`${this.apiUrl}/estatisticas`);
-      const data = await response.json();
-      this.estatisticasCache.set(data);
-    } catch (error) {
-      console.error('Erro ao carregar estatísticas:', error);
-    } finally {
-      this.loadingEstatisticas.set(false);
-    }
+  listarCampusPorIF(siglaIF: string): Observable<string[]> {
+    return this.http.get<{ total: number; campus: string[] }>(`${this.API_URL}/campus/${siglaIF}`).pipe(
+      map(response => response.campus),
+      tap(campus => {
+        this.cacheCampus.set(siglaIF, campus);
+        console.log(`✅ Campus de ${siglaIF}:`, campus.length);
+      }),
+      catchError(this.handleError<string[]>('listarCampusPorIF', []))
+    );
   }
 
   // ========================================
-  // FILTROS LOCAIS
+  // ESTATÍSTICAS
   // ========================================
 
   /**
-   * Filtra docentes do cache local
+   * Estatísticas gerais de todos os IFs
    */
-  filtrarDocentesLocal(filtros: {
-    texto?: string;
-    campus?: string;
-    temDoutorado?: boolean;
-  }): Docente[] {
-    return this.docentesCache().filter(docente => {
-      if (filtros.texto) {
-        const texto = filtros.texto.toLowerCase();
-        const match =
-          docente.nome?.toLowerCase().includes(texto) ||
-          docente.nome_completo?.toLowerCase().includes(texto) ||
-          docente.palavras_chave?.toLowerCase().includes(texto);
-        if (!match) return false;
+  obterEstatisticasGerais(): Observable<Estatisticas> {
+    this.loading.set(true);
+
+    return this.http.get<Estatisticas>(`${this.API_URL}/estatisticas`).pipe(
+      tap(() => console.log('✅ Estatísticas gerais carregadas')),
+      tap(() => this.loading.set(false)),
+      catchError(this.handleError<Estatisticas>('obterEstatisticasGerais', this.getEstatisticasVazias()))
+    );
+  }
+
+  /**
+   * Estatísticas de um IF específico
+   */
+  obterEstatisticasPorIF(siglaIF: string): Observable<Estatisticas & { if: string }> {
+    this.loading.set(true);
+
+    return this.http.get<Estatisticas & { if: string }>(`${this.API_URL}/estatisticas/${siglaIF}`).pipe(
+      tap(() => console.log('✅ Estatísticas gerais carregadas')),
+      tap(() => this.loading.set(false)),
+      catchError(this.handleError<Estatisticas & { if: string }>('obterEstatisticasPorIF', {
+        if: siglaIF,
+        ...this.getEstatisticasVazias()
+      }))
+    );
+  }
+
+  // ========================================
+  // PRODUÇÃO POR ANO
+  // ========================================
+
+  /**
+   * Produção acadêmica agregada por ano
+   */
+  obterProducaoPorAno(
+    siglaIF?: string,
+    anoInicio?: number,
+    anoFim?: number
+  ): Observable<ProducaoPorAno[]> {
+    let params = new HttpParams();
+    if (siglaIF) params = params.set('sigla_if', siglaIF);
+    if (anoInicio) params = params.set('ano_inicio', anoInicio);
+    if (anoFim) params = params.set('ano_fim', anoFim);
+
+    return this.http.get<{ if: string; periodo: any; producao: ProducaoPorAno[] }>(
+      `${this.API_URL}/producao/anos`,
+      { params }
+    ).pipe(
+      map(response => response.producao),
+      tap(producao => console.log('✅ Produção por ano carregada:', producao.length, 'anos')),
+      catchError(this.handleError<ProducaoPorAno[]>('obterProducaoPorAno', []))
+    );
+  }
+
+  // ========================================
+  // UTILITÁRIOS
+  // ========================================
+
+  /**
+   * Força recarregamento do cache da API
+   */
+  recarregarCache(): Observable<any> {
+    this.loading.set(true);
+
+    return this.http.get(`${this.API_URL}/reload`).pipe(
+      tap(() => {
+        // Limpar cache local também
+        this.cacheIFs = null;
+        this.cacheCampus.clear();
+        console.log('✅ Cache recarregado');
+      }),
+      tap(() => this.loading.set(false)),
+      catchError(this.handleError('recarregarCache', null))
+    );
+  }
+
+  /**
+   * Limpa cache local
+   */
+  limparCacheLocal(): void {
+    this.cacheIFs = null;
+    this.cacheCampus.clear();
+    console.log('🧹 Cache local limpo');
+  }
+
+  // ========================================
+  // MÉTODOS PRIVADOS
+  // ========================================
+
+  private handleError<T>(operacao = 'operacao', resultado?: T) {
+    return (error: any): Observable<T> => {
+      console.error(`❌ Erro em ${operacao}:`, error);
+
+      let mensagemErro = 'Erro desconhecido';
+
+      if (error.status === 0) {
+        mensagemErro = 'Não foi possível conectar à API. Verifique se está rodando em http://localhost:8000';
+      } else if (error.status === 404) {
+        mensagemErro = 'Recurso não encontrado';
+      } else if (error.status === 500) {
+        mensagemErro = 'Erro interno do servidor';
+      } else if (error.error?.detail) {
+        mensagemErro = error.error.detail;
       }
 
-      if (filtros.campus && docente.campus !== filtros.campus) return false;
-      if (filtros.temDoutorado !== undefined && docente.tem_doutorado !== filtros.temDoutorado) return false;
+      this.error.set(mensagemErro);
+      this.loading.set(false);
 
-      return true;
-    });
+      return of(resultado as T);
+    };
   }
 
-  /**
-   * Computed signal com filtros
-   */
-  criarDocentesFiltrados(filtros: {
-    texto?: string;
-    campus?: string;
-    temDoutorado?: boolean;
-  }) {
-    return computed(() => this.filtrarDocentesLocal(filtros));
+  private getEstatisticasVazias(): Estatisticas {
+    return {
+      resumo: {
+        total_docentes: 0,
+        total_ifs: 0,
+        total_campus: 0
+      },
+      formacao: {
+        com_graduacao: 0,
+        com_mestrado: 0,
+        com_doutorado: 0,
+        com_pos_doutorado: 0
+      },
+      producao_media: {
+        artigos: 0,
+        orientacoes: 0,
+        projetos: 0,
+        coautores_unicos: 0
+      },
+      gestao: {
+        com_experiencia: 0,
+        percentual: 0
+      },
+      premios: {
+        docentes_premiados: 0,
+        total_premios: 0
+      }
+    };
   }
 }
