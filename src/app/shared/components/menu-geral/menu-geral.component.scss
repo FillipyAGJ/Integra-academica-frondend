@@ -4,16 +4,19 @@
   width: 100%;
   padding: 8px 16px;
 
+  
   color: #fff;
-  // box-shadow: 0 1px 4px #00b4d8;
-  background-color: #2795f5;
+  // box-shadow: 0 1px 4px #8bdff0;
+  background-color: #266AA6;
+  // background-color: #255ddb;
 }
-// .logo{
-//   width: auto;
-//   // height: 100px
-//   max-height: 50px;
-//   object-fit: contain;
-// }
+.logo {
+  height: 30px;       /* tamanho ideal para header */
+  width: auto;
+  display: block;
+}
+
+
 
 .menu {
   display: flex;
@@ -26,11 +29,14 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 1.6em;
   margin: 0;
   line-height: 1.1;
-  font-size: 40px;
 }
+
+
+// .logo-area-text {
+//   font-size: 40px; /* só o texto fica grande */
+// }
 
 .nav-menu {
   margin-left: auto;
@@ -38,5 +44,6 @@
   display: flex;
   align-items: center;
   gap: 32px;
-  font-size: 1.3em;
+  font-size: 1em;
+  padding: auto;
 }

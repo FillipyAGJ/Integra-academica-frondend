@@ -4,6 +4,13 @@
 
 @custom-variant dark (&:is(.dark *));
 
+.logo {
+  height: 50px;
+  width: auto;
+  display: block;
+}
+
+
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);

@@ -3,7 +3,7 @@
 }
 
 .buscar-docente-tela {
-  margin-top: 2em;
+  margin-top: 4em;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -18,7 +18,11 @@
 }
 
 .buscar-docente-tela h1 {
-  font-size: 2em;
+  font-size: 32px;
+  font-family: "Lato", sans-serif;
+  font-weight: 500;
+  font-style: normal;
+  color: #000000;
 }
 
 .formulario-content {
@@ -84,13 +88,13 @@ form {
 }
 
 button[type="submit"] {
-  background-color: #0096c7;
+  background-color: #1d5b8f;
   padding: 1.5em 5em;
   width: 18.2em;
   transition: all 0.3s ease;
 
   &:hover:not(:disabled) {
-    background-color: #007ea7;
+    background-color: #2980c7;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 150, 199, 0.3);
   }
@@ -143,11 +147,15 @@ h3 {
   }
 
   h1 {
-    font-size: 2em;
-    font-weight: 700;
-    color: #1a202c;
-    margin-bottom: 2rem;
-  }
+
+    color: #000000;
+    margin-bottom: 0.5rem;
+    font-size: 32px;
+    font-family: "Lato", sans-serif;
+    font-weight: 500;
+    font-style: normal;
+    margin-top: 9px;
+    }
 
   .filtro-busca-topo {
     margin-bottom: 3rem;
@@ -288,7 +296,7 @@ h3 {
 
     .btn-ver-perfil {
       padding: 0.75rem 2rem;
-      background-color: #0096c7;
+      background-color: #266AA6;
       color: white;
       border: none;
       border-radius: 0.5rem;
@@ -299,7 +307,7 @@ h3 {
       white-space: nowrap;
 
       &:hover {
-        background-color: #007ea7;
+        background-color: #266AA6;
         transform: translateY(-1px);
         box-shadow: 0 4px 12px rgba(0, 150, 199, 0.3);
       }
@@ -382,4 +390,9 @@ h3 {
       margin-bottom: 0.5rem;
     }
   }
+}
+
+.imagem-ilustrativa{
+  width: 480px;
+  margin-right: 90px;
 }
