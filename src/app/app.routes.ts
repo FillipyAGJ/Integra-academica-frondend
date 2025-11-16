@@ -5,6 +5,7 @@ import { ProducaoCientificaComponent } from './pages/producao-cientifica/produca
 import { PerfilDocenteComponent } from './pages/busca-docentes/views/busca-resultado/components/perfil-docente/perfil-docente';
 import { ComparacaoComponent } from './pages/comparacao/comparacao';
 import { ListaDocentesComponent } from './pages/exemplo-claude/exemplo.component';
+import { RankingAcademicoComponent } from './pages/ranking-academico/ranking-academico.component';
 
 export const routes: Routes = [
   { path: '', component: DashboardComponent }, // ✅ Rota raiz vai direto pro dashboard
@@ -14,6 +15,7 @@ export const routes: Routes = [
   { path: 'producao-cientifica', component: ProducaoCientificaComponent },
   { path: 'comparacao', component: ComparacaoComponent },
   { path: 'teste-api', component: ListaDocentesComponent },
+  { path: 'ranking-academico', component: RankingAcademicoComponent },
   { path: '**', redirectTo: '' }, // ✅ Qualquer rota inválida volta pro dashboard
   // {
   //   path: 'dashboard/:sigla/temas-tendencias',
