@@ -1,4 +1,3 @@
-// producao-linha.component.scss
 .grafico {
   margin-top: 30px;
   padding: 20px;
@@ -10,26 +9,68 @@
     h3 {
       margin: 0 0 20px 0;
       font-size: 18px;
-      color: #000000;
-      font-family: "Inter";
-      // font-family: "Lato", sans-serif;
+      font-family: "Inter", sans-serif;
       font-weight: 400;
-      font-style: normal;
       color: #64748b;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      .sigla-badge {
+        background: #5470c6;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: 500;
+      }
     }
 
     .demo-chart {
-      height: 270px;
-      width: 50%;
+      height: 400px;
+      width: 100%;
     }
 
     .loading-state {
-      height: 450px;
+      height: 400px;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       color: #666;
+      gap: 15px;
+
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #5470c6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      p {
+        margin: 0;
+        font-size: 14px;
+      }
+    }
+
+    .error-state {
+      height: 400px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #e74c3c;
+      font-size: 14px;
     }
   }
+}
 
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
