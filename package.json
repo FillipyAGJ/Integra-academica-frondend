@@ -25,6 +25,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "echarts": "^6.0.0",
+    "lucide-angular": "^0.554.0",
     "lucide-static": "^0.546.0",
     "ngx-echarts": "^20.0.2",
     "rxjs": "~7.8.0",

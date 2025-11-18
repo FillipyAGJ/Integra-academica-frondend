@@ -87,7 +87,6 @@ export class ProducaoLinhaComponent implements OnInit, OnChanges {
         next: (data) => {
           console.log('✅ NEXT CHAMADO - Dados recebidos:', data);
 
-          // ✅ Passa undefined se for 'todos', senão passa a sigla
           const siglaParaBusca = this.siglaIF === 'todos' ? undefined : this.siglaIF!;
           const producaoPorAno: ProducaoPorAno[] = this.docentesService.getProducaoPorAno(siglaParaBusca);
 
@@ -99,8 +98,8 @@ export class ProducaoLinhaComponent implements OnInit, OnChanges {
             return;
           }
 
-          // ✅ Filtrar valores nulos e converter com segurança
-          const dadosFiltrados = producaoPorAno.filter(p => p.ano != null);
+          // ✅ Filtrar valores nulos E anos menores que 1999
+          const dadosFiltrados = producaoPorAno.filter(p => p.ano != null && p.ano >= 1999);
 
           const anos = dadosFiltrados.map(p => String(p.ano));
           const artigos = dadosFiltrados.map(p => p.artigos || 0);

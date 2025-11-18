@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 // import { InformacaoIntegraComponent } from '@shared/components/Informacao-Integra/Informacao-Integra.component';
 import { DocentesService } from 'src/app/core/services/docentes.service';
@@ -58,7 +58,7 @@ interface EstatisticasIF {
 @Component({
   selector: 'app-comparacao',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './comparacao.html',
   styleUrl: './comparacao.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

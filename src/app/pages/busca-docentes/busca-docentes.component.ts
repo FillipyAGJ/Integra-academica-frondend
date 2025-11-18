@@ -1,5 +1,5 @@
 // buscar-docentes.component.ts
-import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
@@ -9,7 +9,7 @@ import { ZardFormModule } from '@shared/components/form/form.module';
 import { ZardSelectComponent } from '@shared/components/select/select.component';
 import { ZardSelectItemComponent } from '@shared/components/select/select-item.component';
 import { Docente, DocentesService } from 'src/app/core/services/docentes.service';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
 
 interface SelectOption {
   value: string;
@@ -18,10 +18,6 @@ interface SelectOption {
 
 interface BuscaDocentesForm {
   busca_palavra_chave: FormControl<string | null>;
-  campus: FormControl<string | null>;
-  instituto: FormControl<string | null>;
-  titulacao: FormControl<string | null>;
-  areaDeAtuacao: FormControl<string | null>;
 }
 
 @Component({
@@ -38,47 +34,112 @@ interface BuscaDocentesForm {
   ],
   templateUrl: './busca-docentes.component.html',
   styleUrl: './busca-docentes.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BuscaDocentesComponent implements OnInit {
   private docentesService = inject(DocentesService);
   private fb = inject(FormBuilder);
-  private route = inject(ActivatedRoute);
   private router = inject(Router);
 
+  // Signals para os selects múltiplos
+  readonly institutosSelecionados = signal<string[]>([]);
+  readonly campusSelecionados = signal<string[]>([]);
+  readonly titulacoesSelecionadas = signal<string[]>([]);
+  readonly areasAtuacaoSelecionadas = signal<string[]>([]);
+
   // Signals
-  todosDocentes = signal<Docente[]>([]);
-  docentesFiltrados = signal<Docente[]>([]);
-  loading = signal(false);
-  searched = signal(false);
-  paginaAtual = signal(1);
-  itensPorPagina = 12;
+  readonly todosDocentes = signal<Docente[]>([]);
+  readonly loading = signal(false);
+  readonly searched = signal(false);
+  readonly paginaAtual = signal(1);
+  readonly itensPorPagina = 12;
 
+  // Form simplificado (apenas busca por texto)
+  readonly form: FormGroup<BuscaDocentesForm>;
 
-
-  // Form com tipagem forte
-  form: FormGroup<BuscaDocentesForm>;
-
-  // Options para os selects
-  institutoOptions: SelectOption[] = [];
-  campusOptions: SelectOption[] = [];
-  titulacaoOptions: SelectOption[] = [
-    { value: '', label: 'Todas' },
+  // Options como signals
+  readonly institutoOptions = signal<SelectOption[]>([]);
+  readonly campusOptions = signal<SelectOption[]>([]);
+  readonly titulacaoOptions = signal<SelectOption[]>([
     { value: 'pos_doutorado', label: 'Pós-Doutorado' },
     { value: 'doutorado', label: 'Doutorado' },
     { value: 'mestrado', label: 'Mestrado' },
     { value: 'graduacao', label: 'Graduação' }
-  ];
-  areasAtuacaoOptions: SelectOption[] = [];
+  ]);
+  readonly areasAtuacaoOptions = signal<SelectOption[]>([]);
+
+  // Computed signal para filtrar docentes
+  readonly docentesFiltrados = computed(() => {
+    if (!this.searched()) return [];
+
+    const texto = this.form.value.busca_palavra_chave?.toLowerCase().trim();
+    const institutos = this.institutosSelecionados();
+    const campus = this.campusSelecionados();
+    const titulacoes = this.titulacoesSelecionadas();
+    const areas = this.areasAtuacaoSelecionadas();
+
+    console.log('🔍 Filtrando com:', { texto, institutos, campus, titulacoes, areas });
+
+    let resultados = [...this.todosDocentes()];
+
+    // Filtro por texto
+    if (texto) {
+      resultados = resultados.filter(d =>
+        d.nome?.toLowerCase().includes(texto) ||
+        d.nome_completo?.toLowerCase().includes(texto) ||
+        d.palavras_chave?.toLowerCase().includes(texto) ||
+        d.resumo?.toLowerCase().includes(texto)
+      );
+    }
+
+    // Filtro por instituto (múltiplos)
+    if (institutos.length > 0) {
+      resultados = resultados.filter(d => institutos.includes(d.sigla_if));
+    }
+
+    // Filtro por campus (múltiplos)
+    if (campus.length > 0) {
+      resultados = resultados.filter(d => campus.includes(d.campus));
+    }
+
+    // Filtro por titulação (múltiplos)
+    if (titulacoes.length > 0) {
+      resultados = resultados.filter(d => {
+        return titulacoes.some(tit => {
+          switch (tit) {
+            case 'pos_doutorado': return d.tem_pos_doutorado;
+            case 'doutorado': return d.tem_doutorado && !d.tem_pos_doutorado;
+            case 'mestrado': return d.tem_mestrado && !d.tem_doutorado;
+            case 'graduacao': return d.tem_graduacao && !d.tem_mestrado;
+            default: return true;
+          }
+        });
+      });
+    }
+
+    // Filtro por área de atuação (múltiplos)
+    if (areas.length > 0) {
+      resultados = resultados.filter(d =>
+        areas.some(area =>
+          d.palavras_chave?.toLowerCase().includes(area.toLowerCase())
+        )
+      );
+    }
+
+    console.log('✅ Resultados filtrados:', resultados.length);
+
+    return resultados;
+  });
 
   // Computed signals
-  resultadosVazios = computed(() => this.docentesFiltrados().length === 0);
+  readonly resultadosVazios = computed(() =>
+    this.searched() && this.docentesFiltrados().length === 0
+  );
 
-  totalPaginas = computed(() =>
+  readonly totalPaginas = computed(() =>
     Math.ceil(this.docentesFiltrados().length / this.itensPorPagina)
   );
 
-  docentesPaginados = computed(() => {
+  readonly docentesPaginados = computed(() => {
     const inicio = (this.paginaAtual() - 1) * this.itensPorPagina;
     const fim = inicio + this.itensPorPagina;
     return this.docentesFiltrados().slice(inicio, fim);
@@ -86,11 +147,20 @@ export class BuscaDocentesComponent implements OnInit {
 
   constructor() {
     this.form = this.fb.group<BuscaDocentesForm>({
-      busca_palavra_chave: this.fb.control(''),
-      instituto: this.fb.control(''), // ✅ Novo campo
-      campus: this.fb.control(''),
-      titulacao: this.fb.control(''),
-      areaDeAtuacao: this.fb.control('')
+      busca_palavra_chave: this.fb.control('')
+    });
+
+    // Effect para resetar página quando filtros mudarem
+    effect(() => {
+      // Observar mudanças nos signals
+      this.institutosSelecionados();
+      this.campusSelecionados();
+      this.titulacoesSelecionadas();
+      this.areasAtuacaoSelecionadas();
+
+      if (this.searched()) {
+        this.paginaAtual.set(1);
+      }
     });
   }
 
@@ -99,62 +169,105 @@ export class BuscaDocentesComponent implements OnInit {
     this.setupBuscaAutomatica();
   }
 
-  // ✅ Adicionar debounce na busca automática
   setupBuscaAutomatica(): void {
     this.form.controls.busca_palavra_chave.valueChanges
       .pipe(
-        debounceTime(500), // Espera 500ms após o usuário parar de digitar
+        debounceTime(500),
         distinctUntilChanged()
       )
       .subscribe(() => {
         if (this.searched()) {
-          this.buscarDocentes();
+          this.paginaAtual.set(1);
         }
       });
   }
 
+  onInstitutoChange(value: string | string[]): void {
+    console.log('🏛️ Instituto selecionado:', value);
+    this.institutosSelecionados.set(Array.isArray(value) ? value : [value]);
+    console.log('🏛️ Institutos atualizados:', this.institutosSelecionados());
+  }
+
+  onCampusChange(value: string | string[]): void {
+    console.log('🏫 Campus selecionado:', value);
+    this.campusSelecionados.set(Array.isArray(value) ? value : [value]);
+    console.log('🏫 Campus atualizados:', this.campusSelecionados());
+  }
+
+  onTitulacaoChange(value: string | string[]): void {
+    console.log('🎓 Titulação selecionada:', value);
+    this.titulacoesSelecionadas.set(Array.isArray(value) ? value : [value]);
+    console.log('🎓 Titulações atualizadas:', this.titulacoesSelecionadas());
+  }
+
+  onAreaAtuacaoChange(value: string | string[]): void {
+    console.log('📚 Área selecionada:', value);
+    this.areasAtuacaoSelecionadas.set(Array.isArray(value) ? value : [value]);
+    console.log('📚 Áreas atualizadas:', this.areasAtuacaoSelecionadas());
+  }
+
   carregarDados(): void {
+    console.log('🔄 Iniciando carregamento de dados...');
     this.loading.set(true);
     this.docentesService.carregarDocentes().subscribe({
       next: (docentes) => {
+        console.log('✅ Docentes carregados:', docentes.length);
+        console.log('🔍 Primeiro docente (exemplo):', docentes[0]);
+        console.log('🔍 Estrutura do primeiro docente:', {
+          sigla_if: docentes[0]?.sigla_if,
+          campus: docentes[0]?.campus,
+          palavras_chave: docentes[0]?.palavras_chave,
+          nome: docentes[0]?.nome
+        });
+
         this.todosDocentes.set(docentes);
-        this.docentesFiltrados.set(docentes);
         this.popularOpcoes(docentes);
         this.loading.set(false);
       },
       error: (err) => {
-        console.error('Erro ao carregar docentes:', err);
+        console.error('❌ Erro ao carregar docentes:', err);
         this.loading.set(false);
       }
     });
   }
 
-  // ✅ Melhorar a limpeza e formatação das palavras-chave
   popularOpcoes(docentes: Docente[]): void {
-    const institutosUnicos = [...new Set(docentes.map(d => d.sigla_if).filter(i => i))].sort();
-    this.institutoOptions = [
-      { value: '', label: 'Todos' },
-      ...institutosUnicos.map(i => ({ value: i, label: i }))
-    ];
+    console.log('📊 Populando opções com', docentes.length, 'docentes');
+
+    // Institutos
+    const institutosUnicos = [...new Set(
+      docentes.map(d => d.sigla_if).filter(Boolean)
+    )].sort();
+
+    console.log('🏛️ Institutos únicos encontrados:', institutosUnicos);
+    console.log('🏛️ Total de institutos:', institutosUnicos.length);
+
+    this.institutoOptions.set(
+      institutosUnicos.map(i => ({ value: i, label: i }))
+    );
 
     // Campus
-    const campusUnicos = [...new Set(docentes.map(d => d.campus).filter(c => c))].sort();
-    this.campusOptions = [
-      { value: '', label: 'Todos' },
-      ...campusUnicos.map(c => ({ value: c, label: c }))
-    ];
+    const campusUnicos = [...new Set(
+      docentes.map(d => d.campus).filter(Boolean)
+    )].sort();
 
-    // Áreas de atuação (baseado em palavras-chave) - COM LIMPEZA
+    console.log('🏫 Campus únicos encontrados:', campusUnicos);
+    console.log('🏫 Total de campus:', campusUnicos.length);
+
+    this.campusOptions.set(
+      campusUnicos.map(c => ({ value: c, label: c }))
+    );
+
+    // Áreas de atuação
     const palavrasChave = new Set<string>();
     docentes.forEach(d => {
       if (d.palavras_chave) {
-        // Limpar HTML entities e caracteres especiais
         const palavrasLimpas = d.palavras_chave
-          .replace(/&[#\w]+;/g, '') // Remove HTML entities como &#8730;, &quot;
-          .replace(/[^\w\s,áàâãéèêíïóôõöúçñÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇÑ-]/g, '') // Remove caracteres especiais
+          .replace(/&[#\w]+;/g, '')
+          .replace(/[^\w\s,áàâãéèêíïóôõöúçñÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇÑ-]/g, '')
           .split(',')
           .map(p => p.trim())
-          .filter(p => p.length > 2); // Apenas palavras com mais de 2 caracteres
+          .filter(p => p.length > 2);
 
         palavrasLimpas.forEach(p => {
           if (p) palavrasChave.add(p);
@@ -162,88 +275,44 @@ export class BuscaDocentesComponent implements OnInit {
       }
     });
 
-    // Limitar a 50 opções mais comuns para evitar lentidão
-    const areasArray = Array.from(palavrasChave)
-      .sort()
-      .slice(0, 50);
+    const areasArray = Array.from(palavrasChave).sort().slice(0, 50);
 
-    this.areasAtuacaoOptions = [
-      { value: '', label: 'Todas' },
-      ...areasArray.map(a => ({ value: a, label: a }))
-    ];
+    console.log('📚 Áreas de atuação encontradas:', areasArray.length);
+    console.log('📚 Primeiras 10 áreas:', areasArray.slice(0, 10));
+
+    this.areasAtuacaoOptions.set(
+      areasArray.map(a => ({ value: a, label: a }))
+    );
+
+    // Log final dos signals
+    console.log('✅ institutoOptions final:', this.institutoOptions());
+    console.log('✅ campusOptions final:', this.campusOptions());
+    console.log('✅ areasAtuacaoOptions final (primeiras 5):', this.areasAtuacaoOptions().slice(0, 5));
+    console.log('✅ titulacaoOptions:', this.titulacaoOptions());
   }
 
   onSubmit(): void {
-    this.buscarDocentes();
-  }
+    console.log('🔎 Iniciando busca...');
+    console.log('📝 Filtros ativos:', {
+      texto: this.form.value.busca_palavra_chave,
+      institutos: this.institutosSelecionados(),
+      campus: this.campusSelecionados(),
+      titulacoes: this.titulacoesSelecionadas(),
+      areas: this.areasAtuacaoSelecionadas()
+    });
 
-  // ✅ Otimizar a busca usando setTimeout para não travar a UI
-  buscarDocentes(): void {
-    this.loading.set(true);
     this.searched.set(true);
     this.paginaAtual.set(1);
-
-    // Usar setTimeout para não bloquear a UI
-    setTimeout(() => {
-      const valores = this.form.value;
-      let resultados = [...this.todosDocentes()];
-
-      // Filtro por texto
-      if (valores.busca_palavra_chave) {
-        const texto = valores.busca_palavra_chave.toLowerCase().trim();
-        if (texto) {
-          resultados = resultados.filter(d =>
-            d.nome?.toLowerCase().includes(texto) ||
-            d.nome_completo?.toLowerCase().includes(texto) ||
-            d.palavras_chave?.toLowerCase().includes(texto) ||
-            d.resumo?.toLowerCase().includes(texto)
-          );
-        }
-      }
-
-      if (valores.instituto) {
-        resultados = resultados.filter(d => d.sigla_if === valores.instituto);
-      }
-
-      // Filtro por campus
-      if (valores.campus) {
-        resultados = resultados.filter(d => d.campus === valores.campus);
-      }
-
-      // Filtro por titulação
-      if (valores.titulacao) {
-        resultados = resultados.filter(d => {
-          switch (valores.titulacao) {
-            case 'pos_doutorado': return d.tem_pos_doutorado;
-            case 'doutorado': return d.tem_doutorado && !d.tem_pos_doutorado;
-            case 'mestrado': return d.tem_mestrado && !d.tem_doutorado;
-            case 'graduacao': return d.tem_graduacao && !d.tem_mestrado;
-            default: return true;
-          }
-        });
-      }
-
-      // Filtro por área de atuação
-      if (valores.areaDeAtuacao) {
-        resultados = resultados.filter(d =>
-          d.palavras_chave?.toLowerCase().includes(valores.areaDeAtuacao!.toLowerCase())
-        );
-      }
-
-      this.docentesFiltrados.set(resultados);
-      this.loading.set(false);
-    }, 0);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   limparFiltros(): void {
-    this.form.reset({
-      busca_palavra_chave: '',
-      instituto: '', // ✅ Adicionar
-      campus: '',
-      titulacao: '',
-      areaDeAtuacao: ''
-    });
-    this.docentesFiltrados.set(this.todosDocentes());
+    console.log('🧹 Limpando filtros...');
+    this.form.reset({ busca_palavra_chave: '' });
+    this.institutosSelecionados.set([]);
+    this.campusSelecionados.set([]);
+    this.titulacoesSelecionadas.set([]);
+    this.areasAtuacaoSelecionadas.set([]);
     this.searched.set(false);
     this.paginaAtual.set(1);
   }
@@ -251,24 +320,28 @@ export class BuscaDocentesComponent implements OnInit {
   proximaPagina(): void {
     if (this.paginaAtual() < this.totalPaginas()) {
       this.paginaAtual.update(p => p + 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' }); // ✅ Scroll suave ao trocar página
+      this.scrollToTop();
     }
   }
 
   paginaAnterior(): void {
     if (this.paginaAtual() > 1) {
       this.paginaAtual.update(p => p - 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' }); // ✅ Scroll suave ao trocar página
+      this.scrollToTop();
     }
   }
 
   irParaPrimeiraPagina(): void {
     this.paginaAtual.set(1);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    this.scrollToTop();
   }
 
   irParaUltimaPagina(): void {
     this.paginaAtual.set(this.totalPaginas());
+    this.scrollToTop();
+  }
+
+  private scrollToTop(): void {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -278,9 +351,8 @@ export class BuscaDocentesComponent implements OnInit {
 
   getAreaLabel(palavrasChave: string | undefined): string {
     if (!palavrasChave) return 'Área não informada';
-    // Limpar HTML entities antes de exibir
     const limpo = palavrasChave.replace(/&[#\w]+;/g, '');
-    const areas = limpo.split(',').map(p => p.trim()).filter(p => p);
+    const areas = limpo.split(',').map(p => p.trim()).filter(Boolean);
     return areas[0] || 'Área não informada';
   }
 

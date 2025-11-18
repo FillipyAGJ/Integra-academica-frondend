@@ -1,0 +1,997 @@
+.comparacao-docentes-container {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  background: #f8f9fa;
+  min-height: 100vh;
+
+  .header {
+    text-align: center;
+    margin-bottom: 3rem;
+    position: relative;
+
+    .btn-voltar {
+      position: absolute;
+      left: 0;
+      top: 0;
+      padding: 0.75rem 1.5rem;
+      background: #fff;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 500;
+      color: #333;
+      transition: all 0.3s ease;
+
+      &:hover {
+        background: #f5f5f5;
+        border-color: #2196f3;
+        color: #2196f3;
+        transform: translateX(-5px);
+      }
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      color: #1a237e;
+      margin-bottom: 0.5rem;
+      font-weight: 700;
+    }
+
+    .subtitulo {
+      font-size: 1.1rem;
+      color: #666;
+    }
+  }
+
+  .loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem;
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid #e0e0e0;
+      border-top-color: #2196f3;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    p {
+      margin-top: 1rem;
+      color: #666;
+      font-size: 1.1rem;
+    }
+  }
+
+  .erro {
+    background: #ffebee;
+    border: 2px solid #ef5350;
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+
+    p {
+      color: #c62828;
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+    }
+
+    button {
+      padding: 0.75rem 1.5rem;
+      background: #ef5350;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 500;
+      transition: all 0.3s ease;
+
+      &:hover {
+        background: #c62828;
+        transform: translateY(-2px);
+      }
+    }
+  }
+
+  // Filtros
+  .filtros-container {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+    .filtros-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+
+      h2 {
+        font-size: 1.5rem;
+        color: #1a237e;
+        margin: 0;
+      }
+
+      .btn-limpar-filtros {
+        padding: 0.5rem 1rem;
+        background: #f5f5f5;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #666;
+        transition: all 0.3s ease;
+
+        &:hover {
+          background: #fff3e0;
+          border-color: #ff9800;
+          color: #ff9800;
+        }
+      }
+    }
+
+    .filtros-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 1rem;
+
+      .filtro-item {
+        display: flex;
+        flex-direction: column;
+
+        &.filtro-destaque {
+          grid-column: 1 / -1;
+        }
+
+        label {
+          font-weight: 600;
+          color: #333;
+          margin-bottom: 0.5rem;
+          font-size: 0.9rem;
+        }
+
+        .input-filtro,
+        .select-filtro {
+          padding: 0.75rem;
+          border: 2px solid #e0e0e0;
+          border-radius: 8px;
+          font-size: 1rem;
+          transition: all 0.3s ease;
+
+          &:focus {
+            outline: none;
+            border-color: #2196f3;
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+          }
+        }
+
+        &.checkbox-group {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+
+          label {
+            display: flex;
+            align-items: center;
+            font-weight: 500;
+            cursor: pointer;
+
+            input[type="checkbox"] {
+              margin-right: 0.5rem;
+              width: 18px;
+              height: 18px;
+              cursor: pointer;
+            }
+          }
+        }
+      }
+    }
+
+    .resultados-info {
+      padding: 1rem;
+      background: #e3f2fd;
+      border-radius: 8px;
+      text-align: center;
+
+      p {
+        margin: 0;
+        color: #1565c0;
+        font-size: 1rem;
+
+        strong {
+          font-size: 1.2rem;
+        }
+      }
+    }
+  }
+
+  // Seleção de Docentes
+  .selecao-container {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+    .selecao-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+
+      h2 {
+        font-size: 1.5rem;
+        color: #1a237e;
+        margin: 0;
+      }
+
+      .btn-limpar {
+        padding: 0.5rem 1rem;
+        background: #ffebee;
+        border: 2px solid #ef5350;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #ef5350;
+        transition: all 0.3s ease;
+
+        &:hover {
+          background: #ef5350;
+          color: white;
+        }
+      }
+    }
+
+    .selecionados-preview {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      background: #f5f5f5;
+      border-radius: 12px;
+
+      .chip-docente {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: #2196f3;
+        color: white;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 500;
+
+        .chip-nome {
+          max-width: 200px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .chip-remove {
+          background: rgba(255, 255, 255, 0.3);
+          border: none;
+          color: white;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          cursor: pointer;
+          font-size: 1.2rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.5);
+            transform: scale(1.1);
+          }
+        }
+      }
+    }
+
+    .lista-docentes {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.5rem;
+      max-height: 600px;
+      overflow-y: auto;
+      padding: 0.5rem;
+
+      &::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: #2196f3;
+        border-radius: 4px;
+
+        &:hover {
+          background: #1976d2;
+        }
+      }
+
+      .card-docente-selecao {
+        display: flex;
+        gap: 1rem;
+        padding: 1.25rem;
+        background: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+
+        &:hover {
+          border-color: #2196f3;
+          box-shadow: 0 4px 12px rgba(33, 150, 243, 0.2);
+          transform: translateY(-2px);
+        }
+
+        &.selecionado {
+          border-color: #2196f3;
+          background: #e3f2fd;
+          box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+        }
+
+        &.desabilitado {
+          opacity: 0.5;
+          cursor: not-allowed;
+
+          &:hover {
+            border-color: #e0e0e0;
+            box-shadow: none;
+            transform: none;
+          }
+        }
+
+        .card-checkbox {
+          flex-shrink: 0;
+          width: 28px;
+          height: 28px;
+          border: 2px solid #2196f3;
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: white;
+
+          .check-icon {
+            color: #2196f3;
+            font-size: 1.2rem;
+            font-weight: bold;
+          }
+        }
+
+        .card-conteudo {
+          flex: 1;
+          min-width: 0;
+
+          .card-header-info {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+
+            h3 {
+              font-size: 1rem;
+              color: #1a237e;
+              margin: 0;
+              font-weight: 600;
+              line-height: 1.3;
+            }
+
+            .badge-campus {
+              flex-shrink: 0;
+              padding: 0.25rem 0.5rem;
+              background: #e3f2fd;
+              color: #1565c0;
+              border-radius: 4px;
+              font-size: 0.75rem;
+              font-weight: 600;
+            }
+          }
+
+          .card-metricas {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+
+            .metrica-item {
+              display: flex;
+              align-items: center;
+              gap: 0.5rem;
+
+              .metrica-icone {
+                font-size: 1.2rem;
+              }
+
+              .metrica-info {
+                display: flex;
+                flex-direction: column;
+
+                .metrica-valor {
+                  font-size: 1.1rem;
+                  font-weight: 700;
+                  color: #1a237e;
+                  line-height: 1;
+                }
+
+                .metrica-label {
+                  font-size: 0.7rem;
+                  color: #666;
+                  line-height: 1;
+                }
+              }
+            }
+          }
+
+          .card-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+
+            .badge {
+              padding: 0.25rem 0.5rem;
+              border-radius: 4px;
+              font-size: 0.75rem;
+              font-weight: 600;
+
+              &.badge-doutorado {
+                background: #e8f5e9;
+                color: #2e7d32;
+              }
+
+              &.badge-pos {
+                background: #fff3e0;
+                color: #e65100;
+              }
+
+              &.badge-inter {
+                background: #f3e5f5;
+                color: #6a1b9a;
+              }
+
+              &.badge-premio {
+                background: #fff9c4;
+                color: #f57f17;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .sem-resultados {
+      text-align: center;
+      padding: 3rem;
+      color: #666;
+
+      p {
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+      }
+
+      .btn-limpar {
+        padding: 0.75rem 1.5rem;
+        background: #2196f3;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+
+        &:hover {
+          background: #1976d2;
+          transform: translateY(-2px);
+        }
+      }
+    }
+  }
+
+  // Comparação Detalhada
+  .comparacao-detalhada {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+    h2 {
+      font-size: 1.8rem;
+      color: #1a237e;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    // Cards de Resumo
+    .cards-resumo {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+
+      .card-resumo-docente {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        padding: 1.5rem;
+        color: white;
+
+        .card-resumo-header {
+          margin-bottom: 1rem;
+
+          h3 {
+            font-size: 1.2rem;
+            margin: 0 0 0.5rem 0;
+            font-weight: 600;
+          }
+
+          .badge-campus-resumo {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+          }
+        }
+
+        .resumo-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 1rem;
+          margin-top: 1rem;
+
+          .resumo-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+
+            &.destaque-premio {
+              background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+              padding: 0.75rem;
+              border-radius: 8px;
+
+              .resumo-label {
+                color: #8b6914;
+              }
+
+              .resumo-valor {
+                color: #8b6914;
+                font-weight: 700;
+              }
+            }
+
+            &.destaque-inter {
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              padding: 0.75rem;
+              border-radius: 8px;
+
+              .resumo-label,
+              .resumo-valor {
+                color: white;
+              }
+            }
+          }
+
+          .resumo-label {
+            font-size: 0.85rem;
+            color: #666;
+            font-weight: 500;
+          }
+
+          .resumo-valor {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #2196f3;
+          }
+        }
+      }
+    }
+
+    // Gráficos
+    .graficos-comparacao {
+      display: flex;
+      flex-direction: column;
+      gap: 2.5rem;
+      margin-bottom: 3rem;
+
+      .grafico-secao {
+        h3 {
+          font-size: 1.3rem;
+          color: #1a237e;
+          margin-bottom: 1.5rem;
+          padding-bottom: 0.5rem;
+          border-bottom: 3px solid #2196f3;
+        }
+
+        .barras-comparacao {
+          display: flex;
+          flex-direction: column;
+          gap: 2rem;
+
+          .barra-grupo {
+            .barra-label {
+              display: block;
+              font-weight: 600;
+              color: #333;
+              margin-bottom: 1rem;
+              font-size: 1rem;
+            }
+
+            .barras-container {
+              display: flex;
+              flex-direction: column;
+              gap: 0.75rem;
+
+              .barra-item {
+                display: grid;
+                grid-template-columns: 1fr 100px;
+                align-items: center;
+                gap: 1rem;
+
+                .barra-wrapper {
+                  background: #f5f5f5;
+                  border-radius: 8px;
+                  height: 40px;
+                  position: relative;
+                  overflow: hidden;
+
+                  .barra-preenchimento {
+                    height: 100%;
+                    background: linear-gradient(
+                      90deg,
+                      #64b5f6 0%,
+                      #2196f3 100%
+                    );
+                    border-radius: 8px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: flex-end;
+                    padding-right: 0.75rem;
+                    transition: all 0.5s ease;
+                    min-width: 40px;
+
+                    &.barra-destaque {
+                      background: linear-gradient(
+                        90deg,
+                        #66bb6a 0%,
+                        #43a047 100%
+                      );
+                      box-shadow: 0 2px 8px rgba(67, 160, 71, 0.4);
+                    }
+
+                    &.barra-mestrado {
+                      background: linear-gradient(
+                        90deg,
+                        #ba68c8 0%,
+                        #9c27b0 100%
+                      );
+                    }
+
+                    &.barra-doutorado {
+                      background: linear-gradient(
+                        90deg,
+                        #ff8a65 0%,
+                        #ff5722 100%
+                      );
+                    }
+
+                    &.barra-ic {
+                      background: linear-gradient(
+                        90deg,
+                        #4dd0e1 0%,
+                        #00bcd4 100%
+                      );
+                    }
+
+                    &.barra-coordenador {
+                      background: linear-gradient(
+                        90deg,
+                        #ffd54f 0%,
+                        #ffc107 100%
+                      );
+                    }
+
+                    &.barra-pesquisa {
+                      background: linear-gradient(
+                        90deg,
+                        #81c784 0%,
+                        #66bb6a 100%
+                      );
+                    }
+
+                    &.barra-premio {
+                      background: linear-gradient(
+                        90deg,
+                        #ffb74d 0%,
+                        #ff9800 100%
+                      );
+                    }
+
+                    .barra-valor {
+                      color: white;
+                      font-weight: 700;
+                      font-size: 0.95rem;
+                      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+                    }
+                  }
+                }
+
+                .barra-nome {
+                  font-size: 0.9rem;
+                  color: #666;
+                  font-weight: 500;
+                  text-align: right;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Tabela Resumo
+    .tabela-resumo {
+      margin-top: 3rem;
+
+      h3 {
+        font-size: 1.3rem;
+        color: #1a237e;
+        margin-bottom: 1.5rem;
+      }
+
+      .tabela-wrapper {
+        overflow-x: auto;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          background: white;
+
+          thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+
+            tr th {
+              padding: 1rem;
+              text-align: left;
+              font-weight: 600;
+              font-size: 1rem;
+
+              &:first-child {
+                border-top-left-radius: 12px;
+              }
+
+              &:last-child {
+                border-top-right-radius: 12px;
+              }
+            }
+          }
+
+          tbody {
+            tr {
+              border-bottom: 1px solid #e0e0e0;
+              transition: background 0.2s ease;
+
+              &:hover {
+                background: #f5f5f5;
+              }
+
+              &:last-child {
+                border-bottom: none;
+              }
+
+              td {
+                padding: 1rem;
+                text-align: left;
+
+                &.label-col {
+                  font-weight: 600;
+                  color: #333;
+                  background: #fafafa;
+                }
+
+                &.destaque-cel {
+                  background: #e8f5e9;
+                  color: #2e7d32;
+                  font-weight: 700;
+                  position: relative;
+
+                  &::before {
+                    content: "🏆";
+                    position: absolute;
+                    left: 0.5rem;
+                    font-size: 0.9rem;
+                  }
+
+                  padding-left: 2rem;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .legenda-comparacao {
+      margin-top: 2rem;
+      padding: 1rem;
+      background: #e8f5e9;
+      border-left: 4px solid #43a047;
+      border-radius: 8px;
+
+      p {
+        margin: 0;
+        color: #2e7d32;
+        font-size: 0.95rem;
+      }
+    }
+  }
+
+  .aviso-selecao {
+    background: #fff3e0;
+    border: 2px solid #ff9800;
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    margin-bottom: 2rem;
+
+    p {
+      margin: 0;
+      color: #e65100;
+      font-size: 1.1rem;
+      font-weight: 500;
+    }
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Paginação
+.paginacao {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 2rem;
+  padding: 1rem;
+
+  .btn-paginacao {
+    padding: 0.75rem 1.5rem;
+    background: white;
+    border: 2px solid #2196f3;
+    border-radius: 8px;
+    color: #2196f3;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover:not(:disabled) {
+      background: #2196f3;
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      border-color: #ccc;
+      color: #ccc;
+    }
+  }
+
+  .numeros-pagina {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+
+    .btn-numero-pagina {
+      width: 40px;
+      height: 40px;
+      background: white;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      color: #333;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+
+      &:hover {
+        border-color: #2196f3;
+        color: #2196f3;
+      }
+
+      &.ativo {
+        background: #2196f3;
+        border-color: #2196f3;
+        color: white;
+      }
+    }
+
+    .reticencias {
+      color: #999;
+      font-weight: bold;
+      padding: 0 0.5rem;
+    }
+  }
+}
+
+.info-paginacao {
+  text-align: center;
+  margin-top: 1rem;
+  color: #666;
+  font-size: 0.95rem;
+}
+
+// Responsividade
+@media (max-width: 768px) {
+  .comparacao-docentes-container {
+    padding: 1rem;
+
+    .header {
+      h1 {
+        font-size: 1.8rem;
+      }
+
+      .btn-voltar {
+        position: static;
+        margin-bottom: 1rem;
+        width: 100%;
+      }
+    }
+
+    .filtros-container .filtros-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .selecao-container .lista-docentes {
+      grid-template-columns: 1fr;
+    }
+
+    .comparacao-detalhada {
+      .cards-resumo {
+        grid-template-columns: 1fr;
+      }
+
+      .graficos-comparacao
+        .grafico-secao
+        .barras-comparacao
+        .barra-grupo
+        .barras-container
+        .barra-item {
+        grid-template-columns: 1fr;
+
+        .barra-nome {
+          text-align: left;
+          margin-top: 0.25rem;
+        }
+      }
+    }
+  }
+}

@@ -1,7 +1,7 @@
 <div class="menu">
   <a [routerLink]="['/']">
     <div class="logo-area">
-      <img src="/assets/logo.png" alt="" class="logo"/>
+      <img src="/assets/logo.png" alt="" class="logo" />
 
       <div class="logo-area-text">
         <!-- se tiver texto -->
@@ -22,9 +22,16 @@
     <a [routerLink]="['/producao-cientifica']" routerLinkActive="active"
       >Produção Científica</a
     >
-    <a [routerLink]="['/comparacao']" routerLinkActive="active">Panorama dos IF's</a>
+    <a [routerLink]="['/comparacao']" routerLinkActive="active"
+      >Panorama dos IF's</a
+    >
 
-    <a [routerLink]="['/ranking-academico']" routerLinkActive="active">Ranking Acadêmico</a>
+    <a routerLink="/comparacao-docentes" routerLinkActive="active"
+      >Comparar Docentes</a
+    >
 
+    <a [routerLink]="['/ranking-academico']" routerLinkActive="active"
+      >Ranking Acadêmico</a
+    >
   </nav>
 </div>

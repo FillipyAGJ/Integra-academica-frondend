@@ -1,0 +1,793 @@
+<!-- eslint-disable @angular-eslint/template/label-has-associated-control -->
+<!-- eslint-disable @angular-eslint/template/interactive-supports-focus -->
+<!-- eslint-disable @angular-eslint/template/click-events-have-key-events -->
+<div class="comparacao-docentes-container">
+  <div class="header">
+    <button class="btn-voltar" (click)="voltarHome()">← Voltar</button>
+    <h1>Comparação de Docentes</h1>
+    <p class="subtitulo">
+      Compare a produção científica e acadêmica de até 4 docentes
+    </p>
+  </div>
+
+  @if (carregando()) {
+  <div class="loading">
+    <div class="spinner"></div>
+    <p>Carregando dados...</p>
+  </div>
+  } @if (erro()) {
+  <div class="erro">
+    <p>{{ erro() }}</p>
+    <button (click)="carregarDados()">Tentar novamente</button>
+  </div>
+  } @if (!carregando() && !erro()) {
+
+  <!-- Filtros de Busca -->
+  <div class="filtros-container">
+    <div class="filtros-header">
+      <h2>🔍 Buscar Docentes</h2>
+      <button class="btn-limpar-filtros" (click)="limparFiltros()">
+        Limpar Filtros
+      </button>
+    </div>
+
+    <div class="filtros-grid">
+      <div class="filtro-item filtro-destaque">
+        <label>Buscar por nome:</label>
+        <input
+          type="text"
+          placeholder="Digite o nome do docente..."
+          [(ngModel)]="filtros.texto"
+          (ngModelChange)="aplicarFiltros()"
+          class="input-filtro"
+        />
+      </div>
+
+      <div class="filtro-item">
+        <label>Campus:</label>
+        <select
+          [(ngModel)]="filtros.campus"
+          (ngModelChange)="aplicarFiltros()"
+          class="select-filtro"
+        >
+          <option value="">Todos os campus</option>
+          @for (campus of campusDisponiveis(); track campus) {
+          <option [value]="campus">{{ campus }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="filtro-item">
+        <label>Situação:</label>
+        <select
+          [(ngModel)]="filtros.situacao"
+          (ngModelChange)="aplicarFiltros()"
+          class="select-filtro"
+        >
+          <option value="">Todas</option>
+          @for (situacao of situacoesDisponiveis(); track situacao) {
+          <option [value]="situacao">{{ situacao }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="filtro-item">
+        <label>Nível de Formação:</label>
+        <select
+          [(ngModel)]="filtros.nivelFormacao"
+          (ngModelChange)="aplicarFiltros()"
+          class="select-filtro"
+        >
+          <option value="">Todos os níveis</option>
+          <option value="pos_doutorado">Pós-Doutorado</option>
+          <option value="doutorado">Doutorado</option>
+          <option value="mestrado">Mestrado</option>
+          <option value="graduacao">Graduação</option>
+        </select>
+      </div>
+
+      <div class="filtro-item">
+        <label>Mínimo de Artigos:</label>
+        <input
+          type="number"
+          min="0"
+          placeholder="Ex: 5"
+          [(ngModel)]="filtros.minArtigos"
+          (ngModelChange)="aplicarFiltros()"
+          class="input-filtro"
+        />
+      </div>
+
+      <div class="filtro-item">
+        <label>Mínimo de Orientações:</label>
+        <input
+          type="number"
+          min="0"
+          placeholder="Ex: 3"
+          [(ngModel)]="filtros.minOrientacoes"
+          (ngModelChange)="aplicarFiltros()"
+          class="input-filtro"
+        />
+      </div>
+
+      <div class="filtro-item">
+        <label>Mínimo de Projetos:</label>
+        <input
+          type="number"
+          min="0"
+          placeholder="Ex: 2"
+          [(ngModel)]="filtros.minProjetos"
+          (ngModelChange)="aplicarFiltros()"
+          class="input-filtro"
+        />
+      </div>
+
+      <div class="filtro-item checkbox-group">
+        <label>
+          <input
+            type="checkbox"
+            [(ngModel)]="filtros.temDoutorado"
+            (ngModelChange)="aplicarFiltros()"
+          />
+          Com Doutorado
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            [(ngModel)]="filtros.temPosDoutorado"
+            (ngModelChange)="aplicarFiltros()"
+          />
+          Com Pós-Doutorado
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            [(ngModel)]="filtros.premiado"
+            (ngModelChange)="aplicarFiltros()"
+          />
+          Premiados
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            [(ngModel)]="filtros.teveGestao"
+            (ngModelChange)="aplicarFiltros()"
+          />
+          Com Experiência em Gestão
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            [(ngModel)]="filtros.interdisciplinar"
+            (ngModelChange)="aplicarFiltros()"
+          />
+          Interdisciplinar
+        </label>
+      </div>
+    </div>
+
+    <div class="resultados-info">
+      <p>
+        <strong>{{ docentesFiltrados().length }}</strong> docente(s)
+        encontrado(s)
+      </p>
+    </div>
+  </div>
+
+  <!-- Seleção de Docentes -->
+  <div class="selecao-container">
+    <div class="selecao-header">
+      <h2>👥 Selecione até 4 docentes para comparar</h2>
+      @if (docentesSelecionados().length > 0) {
+      <button class="btn-limpar" (click)="limparSelecao()">
+        Limpar Seleção ({{ docentesSelecionados().length }})
+      </button>
+      }
+    </div>
+
+    <!-- Docentes Selecionados -->
+    @if (docentesSelecionados().length > 0) {
+    <div class="selecionados-preview">
+      @for (id of docentesSelecionados(); track id) {
+      <div class="chip-docente">
+        <span class="chip-nome">{{ getNomeDocente(id) }}</span>
+        <button (click)="toggleDocente(id)" class="chip-remove">×</button>
+      </div>
+      }
+    </div>
+    }
+
+    <!-- Lista de Docentes com Paginação -->
+    @if (docentesFiltrados().length > 0) {
+    <div class="lista-docentes">
+      @for (docente of docentesPaginados(); track docente.id) {
+      <div
+        class="card-docente-selecao"
+        [class.selecionado]="estaSelecionado(docente.id)"
+        [class.desabilitado]="!estaSelecionado(docente.id) && docentesSelecionados().length >= 4"
+        (click)="toggleDocente(docente.id)"
+      >
+        <div class="card-checkbox">
+          @if (estaSelecionado(docente.id)) {
+          <span class="check-icon">✓</span>
+          }
+        </div>
+
+        <div class="card-conteudo">
+          <div class="card-header-info">
+            <h3>{{ docente.nome }}</h3>
+            <span class="badge-campus">{{ docente.campus }}</span>
+          </div>
+
+          <div class="card-metricas">
+            <div class="metrica-item">
+              <span class="metrica-icone">📝</span>
+              <div class="metrica-info">
+                <span class="metrica-valor"
+                  >{{ docente.total_artigos || 0 }}</span
+                >
+                <span class="metrica-label">Artigos</span>
+              </div>
+            </div>
+
+            <div class="metrica-item">
+              <span class="metrica-icone">👥</span>
+              <div class="metrica-info">
+                <span class="metrica-valor"
+                  >{{ docente.total_orientacoes || 0 }}</span
+                >
+                <span class="metrica-label">Orientações</span>
+              </div>
+            </div>
+
+            <div class="metrica-item">
+              <span class="metrica-icone">🔬</span>
+              <div class="metrica-info">
+                <span class="metrica-valor"
+                  >{{ docente.total_projetos || 0 }}</span
+                >
+                <span class="metrica-label">Projetos</span>
+              </div>
+            </div>
+
+            @if (docente.premiado) {
+            <div class="metrica-item">
+              <span class="metrica-icone">🏆</span>
+              <div class="metrica-info">
+                <span class="metrica-valor"
+                  >{{ docente.total_premios || 0 }}</span
+                >
+                <span class="metrica-label">Prêmios</span>
+              </div>
+            </div>
+            }
+          </div>
+
+          <div class="card-badges">
+            @if (docente.tem_doutorado) {
+            <span class="badge badge-doutorado">Doutorado</span>
+            } @if (docente.tem_pos_doutorado) {
+            <span class="badge badge-pos">Pós-Doc</span>
+            } @if (docente.interdisciplinar) {
+            <span class="badge badge-inter">Interdisciplinar</span>
+            }
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+
+    <!-- Paginação -->
+    @if (totalPaginas() > 1) {
+    <div class="paginacao">
+      <button
+        class="btn-paginacao"
+        [disabled]="paginaAtual() === 1"
+        (click)="paginaAnterior()"
+      >
+        ← Anterior
+      </button>
+
+      <div class="numeros-pagina">
+        @for (pagina of getPaginasVisiveis(); track pagina) { @if (pagina ===
+        -1) {
+        <span class="reticencias">...</span>
+        } @else {
+        <button
+          class="btn-numero-pagina"
+          [class.ativo]="pagina === paginaAtual()"
+          (click)="irParaPagina(pagina)"
+        >
+          {{ pagina }}
+        </button>
+        } }
+      </div>
+
+      <button
+        class="btn-paginacao"
+        [disabled]="paginaAtual() === totalPaginas()"
+        (click)="proximaPagina()"
+      >
+        Próxima →
+      </button>
+    </div>
+
+    <div class="info-paginacao">
+      <p>
+        Mostrando {{ (paginaAtual() - 1) * itensPorPagina + 1 }} - {{
+        paginaAtual() * itensPorPagina > docentesFiltrados().length ?
+        docentesFiltrados().length : paginaAtual() * itensPorPagina }} de {{
+        docentesFiltrados().length }} docentes
+      </p>
+    </div>
+    } } @if (docentesFiltrados().length === 0) {
+    <div class="sem-resultados">
+      <p>😕 Nenhum docente encontrado com os filtros aplicados.</p>
+      <button (click)="limparFiltros()" class="btn-limpar">
+        Limpar Filtros
+      </button>
+    </div>
+    }
+  </div>
+
+  <!-- Comparação Detalhada -->
+  @if (comparacao().length >= 2) {
+  <div class="comparacao-detalhada">
+    <h2>📊 Comparação Detalhada</h2>
+
+    <!-- Cards de Resumo -->
+    <!-- Cards de Resumo -->
+    <div class="cards-resumo">
+      @for (comp of comparacao(); track comp.docente.id) {
+      <div class="card-resumo-docente">
+        <div class="card-resumo-header">
+          <h3>{{ comp.docente.nome }}</h3>
+          <span class="badge-campus-resumo">{{ comp.docente.campus }}</span>
+        </div>
+
+        <div class="resumo-grid">
+          <div class="resumo-item">
+            <span class="resumo-label">Formação</span>
+            <span class="resumo-valor">
+              @if (comp.docente.tem_pos_doutorado) { Pós-Doutorado } @else if
+              (comp.docente.tem_doutorado) { Doutorado } @else if
+              (comp.docente.tem_mestrado) { Mestrado } @else { Graduação }
+            </span>
+          </div>
+
+          <div class="resumo-item">
+            <span class="resumo-label">Produção</span>
+            <span class="resumo-valor"> {{ comp.totalArtigos }} artigos </span>
+          </div>
+
+          <div class="resumo-item">
+            <span class="resumo-label">Orientações</span>
+            <span class="resumo-valor">
+              {{ comp.totalOrientacoes }} total
+            </span>
+          </div>
+
+          <div class="resumo-item">
+            <span class="resumo-label">Projetos</span>
+            <span class="resumo-valor"> {{ comp.totalProjetos }} total </span>
+          </div>
+
+          @if (comp.docente.premiado) {
+          <div class="resumo-item destaque-premio">
+            <span class="resumo-label">🏆 Prêmios</span>
+            <span class="resumo-valor"> {{ comp.totalPremios }} </span>
+          </div>
+          } @if (comp.docente.interdisciplinar) {
+          <div class="resumo-item destaque-inter">
+            <span class="resumo-label">🔀 Interdisciplinar</span>
+            <span class="resumo-valor">
+              {{ comp.docente.total_areas_diferentes || 0 }} áreas
+            </span>
+          </div>
+          }
+        </div>
+      </div>
+      }
+    </div>
+
+    <!-- Gráficos de Comparação -->
+    <div class="graficos-comparacao">
+      <!-- Produção Científica -->
+      <div class="grafico-secao">
+        <h3>📝 Produção Científica</h3>
+        <div class="barras-comparacao">
+          <div class="barra-grupo">
+            <span class="barra-label">Total de Artigos</span>
+            <div class="barras-container">
+              @for (comp of comparacao(); track comp.docente.id) {
+              <div class="barra-item">
+                <div class="barra-wrapper">
+                  <div
+                    class="barra-preenchimento"
+                    [class.barra-destaque]="ehMaior(comp.totalArtigos, 'totalArtigos')"
+                    [style.width.%]="getPercentual(comp.totalArtigos, 'totalArtigos')"
+                  >
+                    <span class="barra-valor">{{ comp.totalArtigos }}</span>
+                  </div>
+                </div>
+                <span class="barra-nome"
+                  >{{ comp.docente.nome.split(' ')[0] }}</span
+                >
+              </div>
+              }
+            </div>
+          </div>
+
+          <div class="barra-grupo">
+            <span class="barra-label">Artigos Relevantes</span>
+            <div class="barras-container">
+              @for (comp of comparacao(); track comp.docente.id) {
+              <div class="barra-item">
+                <div class="barra-wrapper">
+                  <div
+                    class="barra-preenchimento"
+                    [class.barra-destaque]="ehMaior(comp.artigosRelevantes, 'artigosRelevantes')"
+                    [style.width.%]="getPercentual(comp.artigosRelevantes, 'artigosRelevantes')"
+                  >
+                    <span class="barra-valor"
+                      >{{ comp.artigosRelevantes }}</span
+                    >
+                  </div>
+                </div>
+                <span class="barra-nome"
+                  >{{ comp.docente.nome.split(' ')[0] }}</span
+                >
+              </div>
+              }
+            </div>
+          </div>
+
+          <div class="barra-grupo">
+            <span class="barra-label">Trabalhos em Eventos (5 anos)</span>
+            <div class="barras-container">
+              @for (comp of comparacao(); track comp.docente.id) {
+              <div class="barra-item">
+                <div class="barra-wrapper">
+                  <div
+                    class="barra-preenchimento"
+                    [class.barra-destaque]="ehMaior(comp.totalTrabalhos, 'totalTrabalhos')"
+                    [style.width.%]="getPercentual(comp.totalTrabalhos, 'totalTrabalhos')"
+                  >
+                    <span class="barra-valor">{{ comp.totalTrabalhos }}</span>
+                  </div>
+                </div>
+                <span class="barra-nome"
+                  >{{ comp.docente.nome.split(' ')[0] }}</span
+                >
+              </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Orientações -->
+      <div class="grafico-secao">
+        <h3>👥 Orientações</h3>
+        <div class="barras-comparacao">
+          <div class="barra-grupo">
+            <span class="barra-label">Total de Orientações</span>
+            <div class="barras-container">
+              @for (comp of comparacao(); track comp.docente.id) {
+              <div class="barra-item">
+                <div class="barra-wrapper">
+                  <div
+                    class="barra-preenchimento"
+                    [class.barra-destaque]="ehMaior(comp.totalOrientacoes, 'totalOrientacoes')"
+                    [style.width.%]="getPercentual(comp.totalOrientacoes, 'totalOrientacoes')"
+                  >
+                    <span class="barra-valor">{{ comp.totalOrientacoes }}</span>
+                  </div>
+                </div>
+                <span class="barra-nome"
+                  >{{ comp.docente.nome.split(' ')[0] }}</span
+                >
+              </div>
+              }
+            </div>
+          </div>
+
+          <div class="barra-grupo">
+            <span class="barra-label">Mestrado</span>
+            <div class="barras-container">
+              @for (comp of comparacao(); track comp.docente.id) {
+              <div class="barra-item">
+                <div class="barra-wrapper">
+                  <div
+                    class="barra-preenchimento barra-mestrado"
+                    [class.barra-destaque]="ehMaior(comp.orientacoesMestrado, 'orientacoesMestrado')"
+                    [style.width.%]="getPercentual(comp.orientacoesMestrado, 'orientacoesMestrado')"
+                  >
+                    <span class="barra-valor"
+                      >{{ comp.orientacoesMestrado }}</span
+                    >
+                  </div>
+                </div>
+                <span class="barra-nome"
+                  >{{ comp.docente.nome.split(' ')[0] }}</span
+                >
+              </div>
+              }
+            </div>
+          </div>
+
+          <div class="barra-grupo">
+            <span class="barra-label">Doutorado</span>
+            <div class="barras-container">
+              @for (comp of comparacao(); track comp.docente.id) {
+              <div class="barra-item">
+                <div class="barra-wrapper">
+                  <div
+                    class="barra-preenchimento barra-doutorado"
+                    [class.barra-destaque]="ehMaior(comp.orientacoesDoutorado, 'orientacoesDoutorado')"
+                    [style.width.%]="getPercentual(comp.orientacoesDoutorado, 'orientacoesDoutorado')"
+                  >
+                    <span class="barra-valor"
+                      >{{ comp.orientacoesDoutorado }}</span
+                    >
+                  </div>
+                </div>
+                <span class="barra-nome"
+                  >{{ comp.docente.nome.split(' ')[0] }}</span
+                >
+              </div>
+              }
+            </div>
+          </div>
+
+          <div class="barra-grupo">
+            <span class="barra-label">Iniciação Científica</span>
+            <div class="barras-container">
+              @for (comp of comparacao(); track comp.docente.id) {
+              <div class="barra-item">
+                <div class="barra-wrapper">
+                  <div
+                    class="barra-preenchimento barra-ic"
+                    [class.barra-destaque]="ehMaior(comp.orientacoesIC, 'orientacoesIC')"
+                    [style.width.%]="getPercentual(comp.orientacoesIC, 'orientacoesIC')"
+                  >
+                    <span class="barra-valor">{{ comp.orientacoesIC }}</span>
+                  </div>
+                </div>
+                <span class="barra-nome"
+                  >{{ comp.docente.nome.split(' ')[0] }}</span
+                >
+              </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Projetos -->
+      <div class="grafico-secao">
+        <h3>🔬 Projetos</h3>
+        <div class="barras-comparacao">
+          <div class="barra-grupo">
+            <span class="barra-label">Total de Projetos</span>
+            <div class="barras-container">
+              @for (comp of comparacao(); track comp.docente.id) {
+              <div class="barra-item">
+                <div class="barra-wrapper">
+                  <div
+                    class="barra-preenchimento"
+                    [class.barra-destaque]="ehMaior(comp.totalProjetos, 'totalProjetos')"
+                    [style.width.%]="getPercentual(comp.totalProjetos, 'totalProjetos')"
+                  >
+                    <span class="barra-valor">{{ comp.totalProjetos }}</span>
+                  </div>
+                </div>
+                <span class="barra-nome"
+                  >{{ comp.docente.nome.split(' ')[0] }}</span
+                >
+              </div>
+              }
+            </div>
+          </div>
+
+          <div class="barra-grupo">
+            <span class="barra-label">Como Coordenador</span>
+            <div class="barras-container">
+              @for (comp of comparacao(); track comp.docente.id) {
+              <div class="barra-item">
+                <div class="barra-wrapper">
+                  <div
+                    class="barra-preenchimento barra-coordenador"
+                    [class.barra-destaque]="ehMaior(comp.projetosCoordenador, 'projetosCoordenador')"
+                    [style.width.%]="getPercentual(comp.projetosCoordenador, 'projetosCoordenador')"
+                  >
+                    <span class="barra-valor"
+                      >{{ comp.projetosCoordenador }}</span
+                    >
+                  </div>
+                </div>
+                <span class="barra-nome"
+                  >{{ comp.docente.nome.split(' ')[0] }}</span
+                >
+              </div>
+              }
+            </div>
+          </div>
+
+          <div class="barra-grupo">
+            <span class="barra-label">Projetos de Pesquisa</span>
+            <div class="barras-container">
+              @for (comp of comparacao(); track comp.docente.id) {
+              <div class="barra-item">
+                <div class="barra-wrapper">
+                  <div
+                    class="barra-preenchimento barra-pesquisa"
+                    [class.barra-destaque]="ehMaior(comp.projetosPesquisa, 'projetosPesquisa')"
+                    [style.width.%]="getPercentual(comp.projetosPesquisa, 'projetosPesquisa')"
+                  >
+                    <span class="barra-valor">{{ comp.projetosPesquisa }}</span>
+                  </div>
+                </div>
+                <span class="barra-nome"
+                  >{{ comp.docente.nome.split(' ')[0] }}</span
+                >
+              </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reconhecimento -->
+      @if (temPremios()) {
+      <div class="grafico-secao">
+        <h3>🏆 Reconhecimento</h3>
+        <div class="barras-comparacao">
+          <div class="barra-grupo">
+            <span class="barra-label">Total de Prêmios</span>
+            <div class="barras-container">
+              @for (comp of comparacao(); track comp.docente.id) {
+              <div class="barra-item">
+                <div class="barra-wrapper">
+                  <div
+                    class="barra-preenchimento barra-premio"
+                    [class.barra-destaque]="ehMaior(comp.totalPremios, 'totalPremios')"
+                    [style.width.%]="getPercentual(comp.totalPremios, 'totalPremios')"
+                  >
+                    <span class="barra-valor">{{ comp.totalPremios }}</span>
+                  </div>
+                </div>
+                <span class="barra-nome"
+                  >{{ comp.docente.nome.split(' ')[0] }}</span
+                >
+              </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+
+    <!-- Tabela Resumo -->
+    <div class="tabela-resumo">
+      <h3>📋 Resumo Comparativo</h3>
+      <div class="tabela-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Métrica</th>
+              @for (comp of comparacao(); track comp.docente.id) {
+              <th>{{ comp.docente.nome.split(' ')[0] }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="label-col">📝 Total de Artigos</td>
+              @for (comp of comparacao(); track comp.docente.id) {
+              <td
+                [class.destaque-cel]="ehMaior(comp.totalArtigos, 'totalArtigos')"
+              >
+                {{ comp.totalArtigos }}
+              </td>
+              }
+            </tr>
+            <tr>
+              <td class="label-col">⭐ Artigos Relevantes</td>
+              @for (comp of comparacao(); track comp.docente.id) {
+              <td
+                [class.destaque-cel]="ehMaior(comp.artigosRelevantes, 'artigosRelevantes')"
+              >
+                {{ comp.artigosRelevantes }}
+              </td>
+              }
+            </tr>
+            <tr>
+              <td class="label-col">👥 Total de Orientações</td>
+              @for (comp of comparacao(); track comp.docente.id) {
+              <td
+                [class.destaque-cel]="ehMaior(comp.totalOrientacoes, 'totalOrientacoes')"
+              >
+                {{ comp.totalOrientacoes }}
+              </td>
+              }
+            </tr>
+            <tr>
+              <td class="label-col">🎓 Orientações Mestrado</td>
+              @for (comp of comparacao(); track comp.docente.id) {
+              <td
+                [class.destaque-cel]="ehMaior(comp.orientacoesMestrado, 'orientacoesMestrado')"
+              >
+                {{ comp.orientacoesMestrado }}
+              </td>
+              }
+            </tr>
+            <tr>
+              <td class="label-col">🎓 Orientações Doutorado</td>
+              @for (comp of comparacao(); track comp.docente.id) {
+              <td
+                [class.destaque-cel]="ehMaior(comp.orientacoesDoutorado, 'orientacoesDoutorado')"
+              >
+                {{ comp.orientacoesDoutorado }}
+              </td>
+              }
+            </tr>
+            <tr>
+              <td class="label-col">🔬 Total de Projetos</td>
+              @for (comp of comparacao(); track comp.docente.id) {
+              <td
+                [class.destaque-cel]="ehMaior(comp.totalProjetos, 'totalProjetos')"
+              >
+                {{ comp.totalProjetos }}
+              </td>
+              }
+            </tr>
+            <tr>
+              <td class="label-col">👨‍🏫 Projetos Coordenados</td>
+              @for (comp of comparacao(); track comp.docente.id) {
+              <td
+                [class.destaque-cel]="ehMaior(comp.projetosCoordenador, 'projetosCoordenador')"
+              >
+                {{ comp.projetosCoordenador }}
+              </td>
+              }
+            </tr>
+            <tr>
+              <td class="label-col">🏆 Prêmios</td>
+              @for (comp of comparacao(); track comp.docente.id) {
+              <td
+                [class.destaque-cel]="ehMaior(comp.totalPremios, 'totalPremios')"
+              >
+                {{ comp.totalPremios }}
+              </td>
+              }
+            </tr>
+            <tr>
+              <td class="label-col">📊 Média de Coautores</td>
+              @for (comp of comparacao(); track comp.docente.id) {
+              <td
+                [class.destaque-cel]="ehMaior(comp.mediaCoautores, 'mediaCoautores')"
+              >
+                {{ comp.mediaCoautores }}
+              </td>
+              }
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="legenda-comparacao">
+      <p>
+        💡 <strong>Legenda:</strong> Valores destacados indicam o melhor
+        desempenho na métrica.
+      </p>
+    </div>
+  </div>
+  } @if (docentesSelecionados().length === 1) {
+  <div class="aviso-selecao">
+    <p>ℹ️ Selecione pelo menos mais um docente para visualizar a comparação.</p>
+  </div>
+  } }
+</div>

@@ -21,11 +21,14 @@
         <z-form-control>
           <z-select
             id="instituto"
-            formControlName="instituto"
             zPlaceholder="Instituto Federal"
             class="input-g"
+            [zMultiple]="true"
+            [zMaxLabelCount]="2"
+            [zValue]="institutosSelecionados()"
+            (zSelectionChange)="onInstitutoChange($event)"
           >
-            @for (instituto of institutoOptions; track instituto.value) {
+            @for (instituto of institutoOptions(); track instituto.value) {
             <z-select-item [zValue]="instituto.value">{{
               instituto.label
             }}</z-select-item>
@@ -39,11 +42,14 @@
           <z-form-control>
             <z-select
               id="campus"
-              formControlName="campus"
               zPlaceholder="Campus"
               class="selects"
+              [zMultiple]="true"
+              [zMaxLabelCount]="2"
+              [zValue]="campusSelecionados()"
+              (zSelectionChange)="onCampusChange($event)"
             >
-              @for (campus of campusOptions; track campus.value) {
+              @for (campus of campusOptions(); track campus.value) {
               <z-select-item [zValue]="campus.value">{{
                 campus.label
               }}</z-select-item>
@@ -56,11 +62,14 @@
           <z-form-control>
             <z-select
               id="titulacao"
-              formControlName="titulacao"
               zPlaceholder="Titulação"
               class="selects"
+              [zMultiple]="true"
+              [zMaxLabelCount]="2"
+              [zValue]="titulacoesSelecionadas()"
+              (zSelectionChange)="onTitulacaoChange($event)"
             >
-              @for (titulacao of titulacaoOptions; track titulacao.value) {
+              @for (titulacao of titulacaoOptions(); track titulacao.value) {
               <z-select-item [zValue]="titulacao.value">{{
                 titulacao.label
               }}</z-select-item>
@@ -74,11 +83,14 @@
         <z-form-control>
           <z-select
             id="areaDeAtuacao"
-            formControlName="areaDeAtuacao"
             zPlaceholder="Área de Atuação"
             class="input-g"
+            [zMultiple]="true"
+            [zMaxLabelCount]="2"
+            [zValue]="areasAtuacaoSelecionadas()"
+            (zSelectionChange)="onAreaAtuacaoChange($event)"
           >
-            @for (areaDeAtuacao of areasAtuacaoOptions; track
+            @for (areaDeAtuacao of areasAtuacaoOptions(); track
             areaDeAtuacao.value) {
             <z-select-item [zValue]="areaDeAtuacao.value">{{
               areaDeAtuacao.label
@@ -103,12 +115,10 @@
       </div>
     </form>
 
-    @if (!searched()) {
     <h3>
       Clique em buscar para explorar todos os docentes ou use os filtros para
       uma busca mais precisa.
     </h3>
-    }
   </div>
 
   <div class="imagem-ilustrativa">
@@ -122,14 +132,13 @@
 <div class="resultados-busca">
   <h1>Resultados da Busca</h1>
 
-  <!-- Filtro de busca no topo -->
   <div class="filtro-busca-topo">
     <input
       type="text"
       placeholder="Busque por nome, palavra-chave ou tema..."
       class="input-busca-resultados"
       [formControl]="form.controls.busca_palavra_chave"
-      (keyup.enter)="buscarDocentes()"
+      (keyup.enter)="onSubmit()"
     />
   </div>
 
@@ -137,7 +146,7 @@
   <div class="loading-state">
     <p>Carregando resultados...</p>
   </div>
-  } @else { @if (resultadosVazios()) {
+  } @else if (resultadosVazios()) {
   <div class="sem-resultados">
     <h2>Nenhum docente encontrado</h2>
     <p>Tente ajustar os filtros de busca para encontrar mais resultados.</p>
@@ -173,12 +182,8 @@
       }
     </div>
 
-    <!-- Paginação -->
-    <!-- Paginação -->
-    <!-- Paginação -->
     @if (totalPaginas() > 1) {
     <div class="pagination">
-      <!-- Botão Primeira Página -->
       <button
         (click)="irParaPrimeiraPagina()"
         [disabled]="paginaAtual() === 1"
@@ -187,7 +192,6 @@
         « Primeira
       </button>
 
-      <!-- Botão Anterior -->
       <button
         (click)="paginaAnterior()"
         [disabled]="paginaAtual() === 1"
@@ -196,12 +200,10 @@
         ‹ Anterior
       </button>
 
-      <!-- Número da página atual -->
       <span class="page-info"
         >Página {{ paginaAtual() }} de {{ totalPaginas() }}</span
       >
 
-      <!-- Botão Próxima -->
       <button
         (click)="proximaPagina()"
         [disabled]="paginaAtual() === totalPaginas()"
@@ -210,7 +212,6 @@
         Próxima ›
       </button>
 
-      <!-- Botão Última Página -->
       <button
         (click)="irParaUltimaPagina()"
         [disabled]="paginaAtual() === totalPaginas()"
@@ -221,6 +222,6 @@
     </div>
     }
   </div>
-  } }
+  }
 </div>
 }
