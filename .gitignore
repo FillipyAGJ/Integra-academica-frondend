@@ -13,6 +13,7 @@ yarn-error.log
 
 # Ignorar CSVs gerados na pasta public/assets/todos
 public/assets/todos/
+public/assets/todos2/
 
 
 # IDEs and editors

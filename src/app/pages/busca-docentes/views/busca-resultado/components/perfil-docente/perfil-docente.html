@@ -1,3 +1,5 @@
+<!-- eslint-disable @angular-eslint/template/click-events-have-key-events -->
+<!-- eslint-disable @angular-eslint/template/interactive-supports-focus -->
 <div class="perfil-docente-container">
   @if (loading()) {
   <div class="loading-state">
@@ -6,7 +8,7 @@
   </div>
   } @else if (docente()) {
   <div class="perfil-content">
-    <!-- Header com informações básicas -->
+    <!-- Header aprimorado com informações completas -->
     <div class="perfil-header">
       <div class="docente-info-principal">
         <div class="avatar-grande">
@@ -15,38 +17,279 @@
 
         <div class="info-texto">
           <h1>{{ docente()?.nome || docente()?.nome_completo }}</h1>
+
+          @if (titulacaoMaisAlta()) {
+          <p class="titulacao">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path
+                d="M8.211 2.047a.5.5 0 00-.422 0l-7.5 3.5a.5.5 0 000 .906L3 7.347v4.653a1 1 0 001.657.753l3.343-2.869 3.343 2.869A1 1 0 0012 12V7.347l.711-.294a.5.5 0 000-.906l-7.5-3.5z"
+              />
+            </svg>
+            {{ titulacaoMaisAlta() }}
+          </p>
+          }
+
           <p class="campus">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
               <path d="M8 0L0 6v10h16V6L8 0zm0 2.5L13 6v7H3V6l5-3.5z" />
             </svg>
-            {{ docente()?.campus || 'Campus não informado' }}
+            {{ docente()?.campus || 'Campus não informado' }} • Rede Federal
           </p>
-          <p class="areas">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-              <path
-                d="M8 0a8 8 0 100 16A8 8 0 008 0zm0 14.5a6.5 6.5 0 110-13 6.5 6.5 0 010 13z"
-              />
-            </svg>
-            {{ getAreaLabel(docente()?.palavras_chave) }}
-          </p>
+
+          <div class="metricas-rapidas">
+            <div class="metrica-item">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="currentColor"
+              >
+                <path
+                  d="M2 2a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V2zm2 0v12h8V2H4z"
+                />
+              </svg>
+              <span>{{ producaoTotal() }} produções</span>
+            </div>
+            @if (linhaPesquisaPrincipal()) {
+            <div class="metrica-item">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="currentColor"
+              >
+                <path
+                  d="M6.5 1A1.5 1.5 0 005 2.5V3H1.5A1.5 1.5 0 000 4.5v1.384l7.614 2.03a1.5 1.5 0 00.772 0L16 5.884V4.5A1.5 1.5 0 0014.5 3H11v-.5A1.5 1.5 0 009.5 1h-3zm0 1h3a.5.5 0 01.5.5V3H6v-.5a.5.5 0 01.5-.5z"
+                />
+              </svg>
+              <span>{{ linhaPesquisaPrincipal() }}</span>
+            </div>
+            }
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Resumo/Bio -->
-    <div class="secao-card resumo-card">
+    <!-- Resumo Geral do Docente -->
+    <div class="secao-card resumo-geral-card">
       <h3>
         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
           <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
           <path
             fill-rule="evenodd"
-            d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"
+            d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"
             clip-rule="evenodd"
           />
         </svg>
-        Sobre
+        Resumo Geral
       </h3>
-      <p>{{ docente()?.resumo || 'Resumo não disponível.' }}</p>
+      <div class="resumo-geral-grid">
+        <div class="resumo-item">
+          <div class="resumo-numero">{{ producaoTotal() }}</div>
+          <div class="resumo-label">Produções Totais</div>
+        </div>
+        <div class="resumo-item">
+          <div class="resumo-numero">{{ totalArtigos() }}</div>
+          <div class="resumo-label">Artigos</div>
+        </div>
+        <div class="resumo-item">
+          <div class="resumo-numero">{{ totalTrabalhos() }}</div>
+          <div class="resumo-label">Trabalhos</div>
+        </div>
+        <div class="resumo-item">
+          <div class="resumo-numero">{{ totalOrientacoes() }}</div>
+          <div class="resumo-label">Orientações</div>
+        </div>
+        <div class="resumo-item">
+          <div class="resumo-numero">{{ totalProjetos() }}</div>
+          <div class="resumo-label">Projetos</div>
+        </div>
+        <div class="resumo-item palavras-principais">
+          <div class="resumo-label">Palavras-chave principais</div>
+          <div class="tags-principais">
+            @for (palavra of palavrasChavePrincipais(); track palavra) {
+            <span class="tag-principal">{{ palavra }}</span>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Destaques -->
+    <div class="secao-card destaques-card">
+      <h3>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+          <path
+            d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+          />
+        </svg>
+        Destaques
+      </h3>
+      <div class="destaques-grid">
+        @if (anoMaisProdutivo()) {
+        <div class="destaque-item">
+          <div
+            class="destaque-icone"
+            style="
+              background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            "
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+            </svg>
+          </div>
+          <div class="destaque-conteudo">
+            <div class="destaque-titulo">Ano mais produtivo</div>
+            <div class="destaque-valor">
+              {{ anoMaisProdutivo()!.ano }} ({{ anoMaisProdutivo()!.quantidade
+              }} publicações)
+            </div>
+          </div>
+        </div>
+        } @if (tipoProducaoPredominante()) {
+        <div class="destaque-item">
+          <div
+            class="destaque-icone"
+            style="
+              background: linear-gradient(135deg, #0096c7 0%, #0077b6 100%);
+            "
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+              <path
+                d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"
+              />
+            </svg>
+          </div>
+          <div class="destaque-conteudo">
+            <div class="destaque-titulo">Tipo predominante</div>
+            <div class="destaque-valor">{{ tipoProducaoPredominante() }}</div>
+          </div>
+        </div>
+        } @if (linhaPesquisaPrincipal()) {
+        <div class="destaque-item">
+          <div
+            class="destaque-icone"
+            style="
+              background: linear-gradient(135deg, #9333ea 0%, #7e22ce 100%);
+            "
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+              <path
+                d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"
+              />
+            </svg>
+          </div>
+          <div class="destaque-conteudo">
+            <div class="destaque-titulo">Linha de pesquisa principal</div>
+            <div class="destaque-valor">{{ linhaPesquisaPrincipal() }}</div>
+          </div>
+        </div>
+        } @if (mediaProducaoAnual()) {
+        <div class="destaque-item">
+          <div
+            class="destaque-icone"
+            style="
+              background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            "
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+              <path d="M3 3v18h18M7 16l4-4 4 4 6-7" />
+            </svg>
+          </div>
+          <div class="destaque-conteudo">
+            <div class="destaque-titulo">Média de produção anual</div>
+            <div class="destaque-valor">
+              {{ mediaProducaoAnual() }} publicações/ano
+            </div>
+          </div>
+        </div>
+        }
+      </div>
+    </div>
+
+    <!-- Sobre - Reestruturado -->
+    <div class="sobre-reestruturado">
+      <!-- Formação Acadêmica -->
+      @if (formacoesAcademicas().length > 0) {
+      <div class="secao-card formacao-card">
+        <h3>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+            <path
+              d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"
+            />
+          </svg>
+          Formação Acadêmica
+        </h3>
+        <div class="formacao-lista">
+          @for (formacao of formacoesAcademicas(); track $index) {
+          <div class="formacao-item">
+            <div class="formacao-bola"></div>
+            <div class="formacao-conteudo">
+              <div class="formacao-titulo">{{ formacao.titulo }}</div>
+              @if (formacao.instituicao) {
+              <div class="formacao-instituicao">{{ formacao.instituicao }}</div>
+              } @if (formacao.ano) {
+              <div class="formacao-ano">{{ formacao.ano }}</div>
+              }
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+      }
+
+      <!-- Atuação Profissional -->
+      @if (docente()?.resumo) {
+      <div class="secao-card atuacao-card">
+        <h3>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+            <path
+              fill-rule="evenodd"
+              d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h2a1 1 0 011 1v1H8V5zm1 5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z"
+              clip-rule="evenodd"
+            />
+            <path
+              d="M2 13.692V16a2 2 0 002 2h12a2 2 0 002-2v-2.308A24.974 24.974 0 0110 15c-2.796 0-5.487-.46-8-1.308z"
+            />
+          </svg>
+          Atuação Profissional
+        </h3>
+        <p class="atuacao-texto">{{ docente()?.resumo }}</p>
+      </div>
+      }
+
+      <!-- Linhas de Pesquisa -->
+      @if (palavrasChave().length > 0) {
+      <div class="secao-card linhas-pesquisa-card">
+        <h3>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+            <path
+              fill-rule="evenodd"
+              d="M9.243 3.03a1 1 0 01.727 1.213L9.53 6h2.94l.56-2.243a1 1 0 111.94.486L14.53 6H17a1 1 0 110 2h-2.97l-1 4H15a1 1 0 110 2h-2.47l-.56 2.242a1 1 0 11-1.94-.485L10.47 14H7.53l-.56 2.242a1 1 0 11-1.94-.485L5.47 14H3a1 1 0 110-2h2.97l1-4H5a1 1 0 110-2h2.47l.56-2.243a1 1 0 011.213-.727zM9.03 8l-1 4h2.938l1-4H9.031z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          Linhas de Pesquisa
+        </h3>
+        <div class="linhas-pesquisa-grid">
+          @for (palavra of palavrasChave(); track palavra) {
+          <div class="linha-pesquisa-item" (click)="filtrarPorPalavra(palavra)">
+            <div class="linha-icone">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 14 14"
+                fill="currentColor"
+              >
+                <circle cx="7" cy="7" r="6" />
+              </svg>
+            </div>
+            <span>{{ palavra }}</span>
+          </div>
+          }
+        </div>
+      </div>
+      }
     </div>
 
     <!-- Grid de gráficos e informações -->
@@ -150,9 +393,9 @@
               <!-- Eixo X com anos -->
               <div class="eixo-x">
                 @for (ponto of pontos(); track ponto.ano) {
-                <span class="ano-label" [style.left.%]="(ponto.x / 500) * 100">
-                  {{ ponto.ano }}
-                </span>
+                <span class="ano-label" [style.left.%]="(ponto.x / 500) * 100"
+                  >{{ ponto.ano }}</span
+                >
                 }
               </div>
             </div>
@@ -168,6 +411,21 @@
           >
             <strong>Ano {{ tooltipAno() }}</strong>
             <span>{{ tooltipQuantidade() }} publicações</span>
+          </div>
+          }
+
+          <!-- Insight automático -->
+          @if (insightProducaoCientifica()) {
+          <div class="insight-box">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path
+                d="M8 15A7 7 0 118 1a7 7 0 010 14zm0 1A8 8 0 108 0a8 8 0 000 16z"
+              />
+              <path
+                d="M8.93 6.588l-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 11-2 0 1 1 0 012 0z"
+              />
+            </svg>
+            <span>{{ insightProducaoCientifica() }}</span>
           </div>
           } } @else {
           <p class="sem-dados">
@@ -195,7 +453,7 @@
             <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
             <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
           </svg>
-          Distribuição por Produção
+          Distribuição por Tipo de Produção
         </h3>
         <div class="grafico-pizza">
           @if (fatiasPizza().length > 0) {
@@ -258,34 +516,28 @@
               class="cor-indicador"
               [style.background-color]="item.cor"
             ></span>
-            <span class="legenda-texto">
-              {{ item.tipo }}: <strong>{{ item.quantidade }}</strong> ({{
-              item.percentual.toFixed(1) }}%)
-            </span>
+            <span class="legenda-texto"
+              >{{ item.tipo }}: <strong>{{ item.quantidade }}</strong> ({{
+              item.percentual.toFixed(1) }}%)</span
+            >
           </div>
           }
         </div>
-      </div>
 
-      <!-- Palavras-chave da pesquisa -->
-      <div class="secao-card palavras-card">
-        <h3>
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+        <!-- Insight automático -->
+        @if (insightDistribuicao()) {
+        <div class="insight-box">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
             <path
-              fill-rule="evenodd"
-              d="M9.243 3.03a1 1 0 01.727 1.213L9.53 6h2.94l.56-2.243a1 1 0 111.94.486L14.53 6H17a1 1 0 110 2h-2.97l-1 4H15a1 1 0 110 2h-2.47l-.56 2.242a1 1 0 11-1.94-.485L10.47 14H7.53l-.56 2.242a1 1 0 11-1.94-.485L5.47 14H3a1 1 0 110-2h2.97l1-4H5a1 1 0 110-2h2.47l.56-2.243a1 1 0 011.213-.727zM9.03 8l-1 4h2.938l1-4H9.031z"
-              clip-rule="evenodd"
+              d="M8 15A7 7 0 118 1a7 7 0 010 14zm0 1A8 8 0 108 0a8 8 0 000 16z"
+            />
+            <path
+              d="M8.93 6.588l-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 11-2 0 1 1 0 012 0z"
             />
           </svg>
-          Palavras-chave da Pesquisa
-        </h3>
-        <div class="nuvem-palavras">
-          @for (palavra of palavrasChave(); track palavra) {
-          <span class="palavra" [style.font-size.px]="14 + ($index % 3) * 6">
-            {{ palavra }}
-          </span>
-          }
+          <span>{{ insightDistribuicao() }}</span>
         </div>
+        }
       </div>
 
       <!-- Índice de Crescimento -->
@@ -311,13 +563,28 @@
           </span>
           <p class="descricao">em relação ao ano anterior</p>
         </div>
+
+        <!-- Insight automático -->
+        @if (insightCrescimento()) {
+        <div class="insight-box">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path
+              d="M8 15A7 7 0 118 1a7 7 0 010 14zm0 1A8 8 0 108 0a8 8 0 000 16z"
+            />
+            <path
+              d="M8.93 6.588l-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 11-2 0 1 1 0 012 0z"
+            />
+          </svg>
+          <span>{{ insightCrescimento() }}</span>
+        </div>
+        }
       </div>
     </div>
 
     <!-- Botões de Ação -->
     <div class="acoes-perfil">
       <button
-        class="btn-exportar"
+        class="btn-acao btn-exportar"
         (click)="exportarPerfil()"
         [disabled]="exportando()"
       >
@@ -330,7 +597,8 @@
         </svg>
         {{ exportando() ? 'Exportando...' : 'Exportar perfil' }}
       </button>
-      <button class="btn-voltar" (click)="voltar()">
+
+      <button class="btn-acao btn-secundario" (click)="voltar()">
         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
           <path
             fill-rule="evenodd"

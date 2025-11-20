@@ -84,6 +84,40 @@
     </div>
   </div>
 
+  <!-- KPIs -->
+  <div class="kpi-cards">
+    <div class="kpi-card">
+      <div class="kpi-icon">🎯</div>
+      <div class="kpi-content">
+        <div class="kpi-label">Índice de Colaboração</div>
+        <div class="kpi-value">
+          {{ kpis.indiceColaboracao }} <span>autores/artigo</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon">📈</div>
+      <div class="kpi-content">
+        <div class="kpi-label">Crescimento Anual</div>
+        <div class="kpi-value">
+          {{ kpis.crescimentoAnual > 0 ? "+" : "" }}{{ kpis.crescimentoAnual }}%
+          <span>vs ano anterior</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon">🌐</div>
+      <div class="kpi-content">
+        <div class="kpi-label">Interdisciplinaridade</div>
+        <div class="kpi-value">
+          {{ kpis.interdisciplinaridade }}% <span>dos docentes</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Gráfico Principal - Evolução Temporal -->
   <div class="chart-container">
     <h2>📈 Evolução Temporal</h2>
@@ -106,24 +140,6 @@
           <span class="rank">{{ i + 1 }}.</span>
           <span class="name">{{ docente.nome }}</span>
           <span class="count">{{ docente.total }}</span>
-        </div>
-        }
-      </div>
-    </div>
-
-    <!-- Colaborações Externas -->
-    <div class="card">
-      <h3>🌍 Colaborações Externas</h3>
-      <div class="collab-list">
-        @if (colaboracoesExternas.length === 0) {
-        <p class="no-data">Nenhum dado disponível</p>
-        } @for (inst of colaboracoesExternas; track inst.nome) {
-        <div class="collab-item">
-          <span class="inst-name">{{ inst.nome }}</span>
-          <div class="progress-bar">
-            <div class="progress-fill" [style.width.%]="inst.percentual"></div>
-          </div>
-          <span class="inst-count">{{ inst.total }}</span>
         </div>
         }
       </div>
@@ -212,40 +228,6 @@
       </span>
     </div>
     } }
-  </div>
-
-  <!-- KPIs -->
-  <div class="kpi-cards">
-    <div class="kpi-card">
-      <div class="kpi-icon">🎯</div>
-      <div class="kpi-content">
-        <div class="kpi-label">Índice de Colaboração</div>
-        <div class="kpi-value">
-          {{ kpis.indiceColaboracao }} <span>autores/artigo</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="kpi-card">
-      <div class="kpi-icon">📈</div>
-      <div class="kpi-content">
-        <div class="kpi-label">Crescimento Anual</div>
-        <div class="kpi-value">
-          {{ kpis.crescimentoAnual > 0 ? "+" : "" }}{{ kpis.crescimentoAnual }}%
-          <span>vs ano anterior</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="kpi-card">
-      <div class="kpi-icon">🌐</div>
-      <div class="kpi-content">
-        <div class="kpi-label">Interdisciplinaridade</div>
-        <div class="kpi-value">
-          {{ kpis.interdisciplinaridade }}% <span>dos docentes</span>
-        </div>
-      </div>
-    </div>
   </div>
 </div>
 }
