@@ -1,4 +1,4 @@
-// buscar-docentes.component.ts
+// busca-docentes.component.ts
 import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
@@ -8,7 +8,7 @@ import { ZardInputDirective } from '@shared/components/input/input.directive';
 import { ZardFormModule } from '@shared/components/form/form.module';
 import { ZardSelectComponent } from '@shared/components/select/select.component';
 import { ZardSelectItemComponent } from '@shared/components/select/select-item.component';
-import { Docente, DocentesService } from 'src/app/core/services/docentes.service';
+import { DocenteEnriquecido, DocentesService } from 'src/app/core/services/docentes.service';
 import { Router } from '@angular/router';
 
 interface SelectOption {
@@ -36,7 +36,7 @@ interface BuscaDocentesForm {
   styleUrl: './busca-docentes.component.scss',
 })
 export class BuscaDocentesComponent implements OnInit {
-  private docentesService = inject(DocentesService);
+  private docentesService: DocentesService = inject(DocentesService);
   private fb = inject(FormBuilder);
   private router = inject(Router);
 
@@ -47,7 +47,7 @@ export class BuscaDocentesComponent implements OnInit {
   readonly areasAtuacaoSelecionadas = signal<string[]>([]);
 
   // Signals
-  readonly todosDocentes = signal<Docente[]>([]);
+  readonly todosDocentes = signal<DocenteEnriquecido[]>([]);
   readonly loading = signal(false);
   readonly searched = signal(false);
   readonly paginaAtual = signal(1);
@@ -91,14 +91,14 @@ export class BuscaDocentesComponent implements OnInit {
       );
     }
 
-    // Filtro por instituto (múltiplos)
+    // Filtro por instituto (múltiplos) - CORRIGIDO: sigla ao invés de sigla_if
     if (institutos.length > 0) {
-      resultados = resultados.filter(d => institutos.includes(d.sigla_if));
+      resultados = resultados.filter(d => institutos.includes(d.sigla));
     }
 
     // Filtro por campus (múltiplos)
     if (campus.length > 0) {
-      resultados = resultados.filter(d => campus.includes(d.campus));
+      resultados = resultados.filter(d => d.campus && campus.includes(d.campus));
     }
 
     // Filtro por titulação (múltiplos)
@@ -214,7 +214,7 @@ export class BuscaDocentesComponent implements OnInit {
         console.log('✅ Docentes carregados:', docentes.length);
         console.log('🔍 Primeiro docente (exemplo):', docentes[0]);
         console.log('🔍 Estrutura do primeiro docente:', {
-          sigla_if: docentes[0]?.sigla_if,
+          sigla: docentes[0]?.sigla,
           campus: docentes[0]?.campus,
           palavras_chave: docentes[0]?.palavras_chave,
           nome: docentes[0]?.nome
@@ -231,12 +231,12 @@ export class BuscaDocentesComponent implements OnInit {
     });
   }
 
-  popularOpcoes(docentes: Docente[]): void {
+  popularOpcoes(docentes: DocenteEnriquecido[]): void {
     console.log('📊 Populando opções com', docentes.length, 'docentes');
 
-    // Institutos
+    // Institutos - CORRIGIDO: usa 'sigla' ao invés de 'sigla_if'
     const institutosUnicos = [...new Set(
-      docentes.map(d => d.sigla_if).filter(Boolean)
+      docentes.map(d => d.sigla).filter((s): s is string => s !== null && s !== undefined)
     )].sort();
 
     console.log('🏛️ Institutos únicos encontrados:', institutosUnicos);
@@ -248,7 +248,7 @@ export class BuscaDocentesComponent implements OnInit {
 
     // Campus
     const campusUnicos = [...new Set(
-      docentes.map(d => d.campus).filter(Boolean)
+      docentes.map(d => d.campus).filter((c): c is string => c !== null && c !== undefined)
     )].sort();
 
     console.log('🏫 Campus únicos encontrados:', campusUnicos);
@@ -345,10 +345,12 @@ export class BuscaDocentesComponent implements OnInit {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  getCampusLabel(campus: string): string {
+  // CORRIGIDO: aceita string | null | undefined
+  getCampusLabel(campus: string | null | undefined): string {
     return campus || 'Campus não informado';
   }
 
+  // CORRIGIDO: aceita string | undefined
   getAreaLabel(palavrasChave: string | undefined): string {
     if (!palavrasChave) return 'Área não informada';
     const limpo = palavrasChave.replace(/&[#\w]+;/g, '');

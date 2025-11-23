@@ -26,9 +26,8 @@ export class ProducaoCientificaComponent implements OnInit, AfterViewInit {
 
   @ViewChild('evolutionChart') canvasRef!: ElementRef<HTMLCanvasElement>;
 
-  private docentesService = inject(DocentesService);
+  private docentesService: DocentesService = inject(DocentesService);
   private cdr = inject(ChangeDetectorRef);
-
 
   heatmapPaginaAtual: number = 1;
   heatmapItensPorPagina: number = 10;
@@ -105,7 +104,6 @@ export class ProducaoCientificaComponent implements OnInit, AfterViewInit {
   dadosCarregados = false;
 
   ngOnInit(): void {
-    // ✅ Não pega mais sigla da rota
     this.siglaIF = null;
     this.nomeIF = 'Rede Federal de Educação';
     this.carregarDados();
@@ -143,7 +141,7 @@ export class ProducaoCientificaComponent implements OnInit, AfterViewInit {
 
   carregarCampusDisponiveis(): void {
     const docentes = this.siglaIF
-      ? this.docentesService.getDocentesPorIF(this.siglaIF)
+      ? this.docentesService.getDocentesPorSigla(this.siglaIF)
       : this.docentesService.getDocentes();
 
     if (!docentes || docentes.length === 0) {
@@ -151,7 +149,7 @@ export class ProducaoCientificaComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    this.campusDisponiveis = ['todos', ...new Set(docentes.map(d => d.campus).filter(c => c))].sort();
+    this.campusDisponiveis = ['todos', ...new Set(docentes.map(d => d.campus).filter((c): c is string => c !== null && c !== undefined))].sort();
   }
 
   criarGraficoEvolucao(): void {
@@ -278,46 +276,58 @@ export class ProducaoCientificaComponent implements OnInit, AfterViewInit {
   filtrarProducaoPorCampus(producao: any[]): any[] {
     if (!producao || producao.length === 0) return [];
 
-    const artigos = this.siglaIF
-      ? this.docentesService.getArtigosPorIF(this.siglaIF)
-      : this.docentesService.getArtigos();
+    // Obter produções filtradas
+    const producoesFiltradas = this.siglaIF
+      ? this.docentesService.getProducoesPorSigla(this.siglaIF)
+      : this.docentesService.getProducoes();
 
-    const orientacoes = this.siglaIF
-      ? this.docentesService.getOrientacoesPorIF(this.siglaIF)
+    const orientacoesFiltradas = this.siglaIF
+      ? this.docentesService.getOrientacoesPorSigla(this.siglaIF)
       : this.docentesService.getOrientacoes();
 
-    const trabalhos = this.siglaIF
-      ? this.docentesService.getTrabalhosPorIF(this.siglaIF)
-      : this.docentesService.getTrabalhos();
+    if (!producoesFiltradas || !orientacoesFiltradas) return producao;
 
-    if (!artigos || !orientacoes || !trabalhos) return producao;
+    // Obter docentes para mapear campus
+    const docentes = this.siglaIF
+      ? this.docentesService.getDocentesPorSigla(this.siglaIF)
+      : this.docentesService.getDocentes();
+
+    // Criar mapa de docente_id -> campus
+    const docenteCampusMap = new Map(docentes.map(d => [d.id, d.campus]));
+
+    // Filtrar artigos e trabalhos por campus
+    const artigos = producoesFiltradas.filter(p =>
+      p.tipo === 'Artigo' &&
+      docenteCampusMap.get(p.id_docente) === this.filtros.campus
+    );
+
+    const trabalhos = producoesFiltradas.filter(p =>
+      p.tipo === 'Trabalho em Evento' &&
+      docenteCampusMap.get(p.id_docente) === this.filtros.campus
+    );
+
+    const orientacoes = orientacoesFiltradas.filter(o =>
+      docenteCampusMap.get(o.id_docente) === this.filtros.campus
+    );
 
     return producao.map(p => {
-      const artigosFiltrados = artigos.filter(a =>
-        a && a.artigo_ano === p.ano && a.docente_campus === this.filtros.campus
-      ).length;
-
-      const orientacoesFiltradas = orientacoes.filter(o =>
-        o && o.ano === p.ano && o.docente_campus === this.filtros.campus
-      ).length;
-
-      const trabalhosFiltrados = trabalhos.filter(t =>
-        t && t.ano === p.ano && t.docente_campus === this.filtros.campus
-      ).length;
+      const artigosFiltrados = artigos.filter(a => a.ano === p.ano).length;
+      const orientacoesFiltradasAno = orientacoes.filter(o => o.ano === p.ano).length;
+      const trabalhosFiltrados = trabalhos.filter(t => t.ano === p.ano).length;
 
       return {
         ano: p.ano,
         artigos: artigosFiltrados,
-        orientacoes: orientacoesFiltradas,
+        orientacoes: orientacoesFiltradasAno,
         trabalhos: trabalhosFiltrados,
-        total: artigosFiltrados + orientacoesFiltradas + trabalhosFiltrados
+        total: artigosFiltrados + orientacoesFiltradasAno + trabalhosFiltrados
       };
     });
   }
 
   getTop10Produtores(): { nome: string; total: number }[] {
     let docentes = this.siglaIF
-      ? this.docentesService.getDocentesPorIF(this.siglaIF)
+      ? this.docentesService.getDocentesPorSigla(this.siglaIF)
       : this.docentesService.getDocentes();
 
     if (!docentes || docentes.length === 0) return [];
@@ -337,13 +347,22 @@ export class ProducaoCientificaComponent implements OnInit, AfterViewInit {
 
   getColaboracoesExternas(): { nome: string; total: number; percentual: number }[] {
     let orientacoes = this.siglaIF
-      ? this.docentesService.getOrientacoesPorIF(this.siglaIF)
+      ? this.docentesService.getOrientacoesPorSigla(this.siglaIF)
       : this.docentesService.getOrientacoes();
 
     if (!orientacoes || orientacoes.length === 0) return [];
 
     if (this.filtros.campus !== 'todos') {
-      orientacoes = orientacoes.filter(o => o && o.docente_campus === this.filtros.campus);
+      // Obter docentes para mapear campus
+      const docentes = this.siglaIF
+        ? this.docentesService.getDocentesPorSigla(this.siglaIF)
+        : this.docentesService.getDocentes();
+
+      const docentesCampus = new Set(
+        docentes.filter(d => d.campus === this.filtros.campus).map(d => d.id)
+      );
+
+      orientacoes = orientacoes.filter(o => docentesCampus.has(o.id_docente));
     }
 
     const instituicoes = new Map<string, number>();
@@ -351,7 +370,7 @@ export class ProducaoCientificaComponent implements OnInit, AfterViewInit {
     orientacoes.forEach(o => {
       if (!o) return;
       const inst = o.instituicao;
-      // ✅ Filtra instituições externas (não da Rede Federal)
+      // Filtra instituições externas (não da Rede Federal)
       if (inst && !this.isRedeFedera(inst)) {
         instituicoes.set(inst, (instituicoes.get(inst) || 0) + 1);
       }
@@ -370,33 +389,39 @@ export class ProducaoCientificaComponent implements OnInit, AfterViewInit {
     }));
   }
 
-  // ✅ Helper para verificar se é instituição da Rede Federal
   isRedeFedera(instituicao: string): boolean {
     const siglas = this.institutosDisponiveis.map(i => i.sigla);
     return siglas.some(sigla => instituicao.includes(sigla));
   }
 
   getAreasMaisAtivas(): { nome: string; total: number }[] {
-    let artigos = this.siglaIF
-      ? this.docentesService.getArtigosPorIF(this.siglaIF)
-      : this.docentesService.getArtigos();
+    // Obter docentes para mapear áreas
+    let docentes = this.siglaIF
+      ? this.docentesService.getDocentesPorSigla(this.siglaIF)
+      : this.docentesService.getDocentes();
 
-    if (!artigos || artigos.length === 0) return [];
+    if (!docentes || docentes.length === 0) return [];
 
     if (this.filtros.campus !== 'todos') {
-      artigos = artigos.filter(a => a && a.docente_campus === this.filtros.campus);
+      docentes = docentes.filter(d => d.campus === this.filtros.campus);
     }
 
-    const areas = new Map<string, number>();
+    const idsDocentes = new Set(docentes.map(d => d.id));
 
-    artigos.forEach(a => {
-      if (!a) return;
-      if (a.artigo_grande_area) {
-        areas.set(a.artigo_grande_area, (areas.get(a.artigo_grande_area) || 0) + 1);
+    // Obter áreas de atuação dos docentes filtrados
+    const areas = this.docentesService.getAreasAtuacao();
+    const areasDocentes = areas.filter(a => idsDocentes.has(a.id_docente));
+
+    // Contar por grande área
+    const grandesAreas = new Map<string, number>();
+
+    areasDocentes.forEach(a => {
+      if (a.grande_area) {
+        grandesAreas.set(a.grande_area, (grandesAreas.get(a.grande_area) || 0) + 1);
       }
     });
 
-    return Array.from(areas.entries())
+    return Array.from(grandesAreas.entries())
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
       .map(([nome, total]) => ({ nome, total }));
@@ -404,19 +429,30 @@ export class ProducaoCientificaComponent implements OnInit, AfterViewInit {
 
   getHeatmapData(): { campus: string; valores: number[] }[] {
     const docentes = this.siglaIF
-      ? this.docentesService.getDocentesPorIF(this.siglaIF)
+      ? this.docentesService.getDocentesPorSigla(this.siglaIF)
       : this.docentesService.getDocentes();
 
-    let artigos = this.siglaIF
-      ? this.docentesService.getArtigosPorIF(this.siglaIF)
-      : this.docentesService.getArtigos();
+    const producoes = this.siglaIF
+      ? this.docentesService.getProducoesPorSigla(this.siglaIF)
+      : this.docentesService.getProducoes();
 
-    if (!docentes || docentes.length === 0 || !artigos) return [];
+    if (!docentes || docentes.length === 0 || !producoes) return [];
 
-    let campusList = [...new Set(docentes.map(d => d?.campus).filter(c => c))];
+    // Filtrar apenas artigos
+    const artigos = producoes.filter(p => p.tipo === 'Artigo');
+
+    // Criar mapa de docente_id -> campus
+    const docenteCampusMap = new Map(docentes.map(d => [d.id, d.campus]));
+
+    // Filtrar campus válidos (não null/undefined)
+    let campusList = [...new Set(
+      docentes
+        .map(d => d.campus)
+        .filter((c): c is string => c !== null && c !== undefined)
+    )];
+
     if (this.filtros.campus !== 'todos') {
       campusList = campusList.filter(c => c === this.filtros.campus);
-      artigos = artigos.filter(a => a && a.docente_campus === this.filtros.campus);
     }
 
     campusList.sort();
@@ -426,24 +462,26 @@ export class ProducaoCientificaComponent implements OnInit, AfterViewInit {
       (_, i) => this.filtros.anoInicio + i
     );
 
-    // ✅ Gera dados de todos os campus UMA VEZ
+    // Gera dados de todos os campus UMA VEZ
     this.heatmapTodosCampus = campusList.map(campus => {
       const valores = this.anos.map(ano => {
         return artigos.filter(a =>
-          a && a.docente_campus === campus && a.artigo_ano === ano
+          a &&
+          docenteCampusMap.get(a.id_docente) === campus &&
+          a.ano === ano
         ).length;
       });
 
       return { campus, valores };
     });
 
-    // ✅ Calcula total de páginas
+    // Calcula total de páginas
     this.heatmapTotalPaginas = Math.ceil(this.heatmapTodosCampus.length / this.heatmapItensPorPagina);
 
-    // ✅ Reseta para página 1 quando aplicar filtros
+    // Reseta para página 1 quando aplicar filtros
     this.heatmapPaginaAtual = 1;
 
-    // ✅ Retorna apenas os itens da página 1
+    // Retorna apenas os itens da página 1
     const inicio = 0;
     const fim = this.heatmapItensPorPagina;
 
@@ -451,29 +489,54 @@ export class ProducaoCientificaComponent implements OnInit, AfterViewInit {
   }
 
   getKPIs(): { indiceColaboracao: number; crescimentoAnual: number; interdisciplinaridade: number } {
-    let artigos = this.siglaIF
-      ? this.docentesService.getArtigosPorIF(this.siglaIF)
-      : this.docentesService.getArtigos();
+    const producoes = this.siglaIF
+      ? this.docentesService.getProducoesPorSigla(this.siglaIF)
+      : this.docentesService.getProducoes();
 
     let docentes = this.siglaIF
-      ? this.docentesService.getDocentesPorIF(this.siglaIF)
+      ? this.docentesService.getDocentesPorSigla(this.siglaIF)
       : this.docentesService.getDocentes();
 
-    if (!artigos || !docentes) {
+    if (!producoes || !docentes) {
       return { indiceColaboracao: 0, crescimentoAnual: 0, interdisciplinaridade: 0 };
     }
 
     if (this.filtros.campus !== 'todos') {
-      artigos = artigos.filter(a => a && a.docente_campus === this.filtros.campus);
       docentes = docentes.filter(d => d && d.campus === this.filtros.campus);
+
+      const idsDocentesCampus = new Set(docentes.map(d => d.id));
+      const artigos = producoes.filter(p =>
+        p.tipo === 'Artigo' &&
+        idsDocentesCampus.has(p.id_docente)
+      );
+
+      const totalArtigos = artigos.length;
+      const totalAutores = artigos.reduce((sum, a) => sum + (a?.num_coautores || 0), 0);
+      const indiceColaboracao = totalArtigos > 0 ? parseFloat((totalAutores / totalArtigos).toFixed(1)) : 0;
+
+      const artigosAnoAtual = artigos.filter(a => a && a.ano === 2024).length;
+      const artigosAnoAnterior = artigos.filter(a => a && a.ano === 2023).length;
+      const crescimentoAnual = artigosAnoAnterior > 0
+        ? Math.round(((artigosAnoAtual - artigosAnoAnterior) / artigosAnoAnterior) * 100)
+        : 0;
+
+      const docentesInterdisciplinares = docentes.filter(d => d && d.interdisciplinar).length;
+      const interdisciplinaridade = docentes.length > 0
+        ? Math.round((docentesInterdisciplinares / docentes.length) * 100)
+        : 0;
+
+      return { indiceColaboracao, crescimentoAnual, interdisciplinaridade };
     }
 
+    // Sem filtro de campus
+    const artigos = producoes.filter(p => p.tipo === 'Artigo');
+
     const totalArtigos = artigos.length;
-    const totalAutores = artigos.reduce((sum, a) => sum + (a?.artigo_total_autores || 0), 0);
+    const totalAutores = artigos.reduce((sum, a) => sum + (a?.num_coautores || 0), 0);
     const indiceColaboracao = totalArtigos > 0 ? parseFloat((totalAutores / totalArtigos).toFixed(1)) : 0;
 
-    const artigosAnoAtual = artigos.filter(a => a && a.artigo_ano === 2024).length;
-    const artigosAnoAnterior = artigos.filter(a => a && a.artigo_ano === 2023).length;
+    const artigosAnoAtual = artigos.filter(a => a && a.ano === 2024).length;
+    const artigosAnoAnterior = artigos.filter(a => a && a.ano === 2023).length;
     const crescimentoAnual = artigosAnoAnterior > 0
       ? Math.round(((artigosAnoAtual - artigosAnoAnterior) / artigosAnoAnterior) * 100)
       : 0;
@@ -489,7 +552,7 @@ export class ProducaoCientificaComponent implements OnInit, AfterViewInit {
   aplicarFiltros(): void {
     console.log('🔍 Aplicando filtros:', this.filtros);
 
-    // ✅ Atualiza siglaIF e nomeIF baseado no filtro
+    // Atualiza siglaIF e nomeIF baseado no filtro
     this.siglaIF = this.filtros.instituto !== 'todos' ? this.filtros.instituto : null;
 
     if (this.filtros.instituto !== 'todos') {
@@ -499,10 +562,10 @@ export class ProducaoCientificaComponent implements OnInit, AfterViewInit {
       this.nomeIF = 'Rede Federal de Educação';
     }
 
-    // ✅ Atualiza campus disponíveis baseado no IF selecionado
+    // Atualiza campus disponíveis baseado no IF selecionado
     this.carregarCampusDisponiveis();
 
-    // ✅ Reseta filtro de campus se mudou o IF
+    // Reseta filtro de campus se mudou o IF
     if (this.filtros.instituto !== 'todos' && this.filtros.campus !== 'todos') {
       if (!this.campusDisponiveis.includes(this.filtros.campus)) {
         this.filtros.campus = 'todos';
@@ -531,7 +594,7 @@ export class ProducaoCientificaComponent implements OnInit, AfterViewInit {
     if (pagina >= 1 && pagina <= this.heatmapTotalPaginas) {
       this.heatmapPaginaAtual = pagina;
 
-      // ✅ Atualiza APENAS o heatmap, sem recalcular tudo
+      // Atualiza APENAS o heatmap, sem recalcular tudo
       const inicio = (this.heatmapPaginaAtual - 1) * this.heatmapItensPorPagina;
       const fim = inicio + this.heatmapItensPorPagina;
       this.heatmapData = this.heatmapTodosCampus.slice(inicio, fim);
@@ -540,7 +603,7 @@ export class ProducaoCientificaComponent implements OnInit, AfterViewInit {
 
   getPaginasHeatmap(): number[] {
     const paginas: number[] = [];
-    const maxPaginas = 5; // Mostra no máximo 5 botões de página
+    const maxPaginas = 5;
 
     let inicio = Math.max(1, this.heatmapPaginaAtual - Math.floor(maxPaginas / 2));
     const fim = Math.min(this.heatmapTotalPaginas, inicio + maxPaginas - 1);

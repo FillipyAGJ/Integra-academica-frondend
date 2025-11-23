@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@ang
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { DocentesService, Docente } from 'src/app/core/services/docentes.service';
+import { DocentesService, DocenteEnriquecido, ProducaoBibliografica, OrientacaoConcluida, Projeto, Formacao } from 'src/app/core/services/docentes.service';
 
 interface FiltrosDocente {
   texto: string;
@@ -21,7 +21,7 @@ interface FiltrosDocente {
 }
 
 interface ComparacaoDocente {
-  docente: Docente;
+  docente: DocenteEnriquecido;
   totalFormacoes: number;
   totalArtigos: number;
   artigosPrimeiroAutor: number;
@@ -49,13 +49,13 @@ interface ComparacaoDocente {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ComparacaoDocentesComponent implements OnInit {
-  private docentesService = inject(DocentesService);
+  private docentesService: DocentesService = inject(DocentesService);
   private router = inject(Router);
 
   carregando = signal(true);
   erro = signal<string | null>(null);
 
-  todosDocentes = signal<Docente[]>([]);
+  todosDocentes = signal<DocenteEnriquecido[]>([]);
 
   // Inicialização dos filtros:
   filtros: FiltrosDocente = {
@@ -73,7 +73,7 @@ export class ComparacaoDocentesComponent implements OnInit {
     interdisciplinar: false,
   };
 
-  docentesFiltrados = signal<Docente[]>([]);
+  docentesFiltrados = signal<DocenteEnriquecido[]>([]);
   docentesSelecionados = signal<number[]>([]);
   comparacao = signal<ComparacaoDocente[]>([]);
 
@@ -83,7 +83,7 @@ export class ComparacaoDocentesComponent implements OnInit {
   // Paginação
   paginaAtual = signal(1);
   itensPorPagina = 12;
-  docentesPaginados = signal<Docente[]>([]);
+  docentesPaginados = signal<DocenteEnriquecido[]>([]);
   totalPaginas = signal(0);
 
   ngOnInit() {
@@ -99,10 +99,10 @@ export class ComparacaoDocentesComponent implements OnInit {
         const docentes = this.docentesService.getDocentes();
         this.todosDocentes.set(docentes);
 
-        const campus = [...new Set(docentes.map(d => d.campus).filter(c => c))].sort();
+        const campus = [...new Set(docentes.map(d => d.campus).filter((c): c is string => c !== null && c !== undefined))].sort();
         this.campusDisponiveis.set(campus);
 
-        const situacoes = [...new Set(docentes.map(d => d.situacao).filter(s => s))].sort();
+        const situacoes = [...new Set(docentes.map(d => d.situacao).filter((s): s is string => s !== null && s !== undefined))].sort();
         this.situacoesDisponiveis.set(situacoes);
 
         this.aplicarFiltros();
@@ -226,19 +226,16 @@ export class ComparacaoDocentesComponent implements OnInit {
     const paginas: number[] = [];
 
     if (total <= 7) {
-      // Mostrar todas as páginas se forem 7 ou menos
       for (let i = 1; i <= total; i++) {
         paginas.push(i);
       }
     } else {
-      // Sempre mostrar primeira página
       paginas.push(1);
 
       if (atual > 3) {
-        paginas.push(-1); // -1 representa "..."
+        paginas.push(-1);
       }
 
-      // Páginas ao redor da atual
       const inicio = Math.max(2, atual - 1);
       const fim = Math.min(total - 1, atual + 1);
 
@@ -247,10 +244,9 @@ export class ComparacaoDocentesComponent implements OnInit {
       }
 
       if (atual < total - 2) {
-        paginas.push(-1); // -1 representa "..."
+        paginas.push(-1);
       }
 
-      // Sempre mostrar última página
       paginas.push(total);
     }
 
@@ -325,20 +321,24 @@ export class ComparacaoDocentesComponent implements OnInit {
   }
 
   private calcularComparacao(
-    docente: Docente,
-    formacoes: any[],
-    artigos: any[],
-    orientacoes: any[],
-    projetos: any[],
-    trabalhos: any[]
+    docente: DocenteEnriquecido,
+    formacoes: Formacao[],
+    artigos: ProducaoBibliografica[],
+    orientacoes: OrientacaoConcluida[],
+    projetos: Projeto[],
+    trabalhos: ProducaoBibliografica[]
   ): ComparacaoDocente {
     const totalArtigos = artigos.length;
-    const artigosPrimeiroAutor = artigos.filter(a =>
-      a.nome_citacao_primeiro_autor?.toLowerCase().includes(docente.nome.toLowerCase().split(' ')[0])
-    ).length;
-    const artigosRelevantes = artigos.filter(a => a.artigo_relevante === 'SIM').length;
+
+    // Artigos como primeiro autor - simplificado (não temos essa info na estrutura atual)
+    const artigosPrimeiroAutor = 0; // Não temos essa informação na nova estrutura
+
+    // Artigos relevantes - não temos essa flag na nova estrutura
+    const artigosRelevantes = 0; // Não temos essa informação na nova estrutura
+
+    // Média de coautores
     const mediaCoautores = totalArtigos > 0
-      ? +(artigos.reduce((sum, a) => sum + (a.artigo_total_autores || 0), 0) / totalArtigos).toFixed(1)
+      ? +(artigos.reduce((sum, a) => sum + (a.num_coautores || 0), 0) / totalArtigos).toFixed(1)
       : 0;
 
     const totalOrientacoes = orientacoes.length;
@@ -349,20 +349,28 @@ export class ComparacaoDocentesComponent implements OnInit {
       o.tipo_orientacao?.toLowerCase().includes('doutorado')
     ).length;
     const orientacoesIC = orientacoes.filter(o =>
-      o.natureza?.toLowerCase().includes('iniciação científica') ||
-      o.tipo_orientacao?.toLowerCase().includes('iniciacao_cientifica')
+      o.tipo_orientacao?.toLowerCase().includes('iniciação') ||
+      o.tipo_orientacao?.toLowerCase().includes('iniciacao')
     ).length;
     const outrasOrientacoes = totalOrientacoes - orientacoesMestrado - orientacoesDoutorado - orientacoesIC;
 
     const totalProjetos = projetos.length;
+
+    // Projetos coordenados - usa flag_coordenador
     const projetosCoordenador = projetos.filter(p =>
-      p.papel?.toLowerCase().includes('coordenador')
+      p.flag_coordenador?.toLowerCase() === 'sim' ||
+      p.flag_coordenador?.toLowerCase() === 's'
     ).length;
+
+    // Projetos de pesquisa
     const projetosPesquisa = projetos.filter(p =>
       p.natureza?.toLowerCase().includes('pesquisa')
     ).length;
+
+    // Projetos de extensão
     const projetosExtensao = projetos.filter(p =>
-      p.natureza?.toLowerCase().includes('extensão') || p.natureza?.toLowerCase().includes('extensao')
+      p.natureza?.toLowerCase().includes('extensão') ||
+      p.natureza?.toLowerCase().includes('extensao')
     ).length;
 
     const totalTrabalhos = trabalhos.length;
@@ -389,26 +397,26 @@ export class ComparacaoDocentesComponent implements OnInit {
     };
   }
 
-  getMaiorValor(metrica: keyof ComparacaoDocente | keyof Docente): number {
+  getMaiorValor(metrica: keyof ComparacaoDocente | keyof DocenteEnriquecido): number {
     const comparacoes = this.comparacao();
     const valores = comparacoes.map(c => {
       if (metrica in c && metrica !== 'docente') {
         return c[metrica as keyof ComparacaoDocente] as number;
       } else {
-        return c.docente[metrica as keyof Docente] as number;
+        return c.docente[metrica as keyof DocenteEnriquecido] as number;
       }
     }).filter(v => typeof v === 'number' && !isNaN(v));
 
     return valores.length > 0 ? Math.max(...valores) : 0;
   }
 
-  ehMaior(valor: number | undefined | null, metrica: keyof ComparacaoDocente | keyof Docente): boolean {
+  ehMaior(valor: number | undefined | null, metrica: keyof ComparacaoDocente | keyof DocenteEnriquecido): boolean {
     if (valor === undefined || valor === null || isNaN(valor)) return false;
     const maior = this.getMaiorValor(metrica);
     return valor === maior && valor > 0;
   }
 
-  getPercentual(valor: number | undefined | null, metrica: keyof ComparacaoDocente | keyof Docente): number {
+  getPercentual(valor: number | undefined | null, metrica: keyof ComparacaoDocente | keyof DocenteEnriquecido): number {
     if (valor === undefined || valor === null || isNaN(valor) || valor === 0) return 0;
     const maior = this.getMaiorValor(metrica);
     if (maior === 0) return 0;
