@@ -87,11 +87,31 @@
   <!-- KPIs -->
   <div class="kpi-cards">
     <div class="kpi-card">
-      <div class="kpi-icon">🎯</div>
+      <div class="kpi-icon">📚</div>
       <div class="kpi-content">
-        <div class="kpi-label">Índice de Colaboração</div>
+        <div class="kpi-label">Total de Publicações</div>
         <div class="kpi-value">
-          {{ kpis.indiceColaboracao }} <span>autores/artigo</span>
+          {{ kpis.totalProducao | number }} <span>artigos</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon">👥</div>
+      <div class="kpi-content">
+        <div class="kpi-label">Docentes Ativos</div>
+        <div class="kpi-value">
+          {{ kpis.totalDocentes | number }} <span>pesquisadores</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon">📊</div>
+      <div class="kpi-content">
+        <div class="kpi-label">Média por Docente</div>
+        <div class="kpi-value">
+          {{ kpis.mediaProducao }} <span>artigos/docente</span>
         </div>
       </div>
     </div>
@@ -102,17 +122,7 @@
         <div class="kpi-label">Crescimento Anual</div>
         <div class="kpi-value">
           {{ kpis.crescimentoAnual > 0 ? "+" : "" }}{{ kpis.crescimentoAnual }}%
-          <span>vs ano anterior</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="kpi-card">
-      <div class="kpi-icon">🌐</div>
-      <div class="kpi-content">
-        <div class="kpi-label">Interdisciplinaridade</div>
-        <div class="kpi-value">
-          {{ kpis.interdisciplinaridade }}% <span>dos docentes</span>
+          <span>vs 2023</span>
         </div>
       </div>
     </div>
@@ -157,6 +167,49 @@
           <span class="area-badge">{{ area.total }}</span>
         </div>
         }
+      </div>
+    </div>
+  </div>
+
+  <!-- Adicione após os info-cards existentes -->
+  <div class="projects-section">
+    <h2>🚀 Projetos Institucionais</h2>
+
+    <div class="project-cards">
+      <div class="project-card">
+        <div class="project-icon">📖</div>
+        <h3>Projetos de Ensino</h3>
+        <p class="project-placeholder">
+          Em breve: visualização de projetos de ensino cadastrados
+        </p>
+        <div class="project-status">Dados em coleta</div>
+      </div>
+
+      <div class="project-card">
+        <div class="project-icon">🌍</div>
+        <h3>Projetos de Extensão</h3>
+        <p class="project-placeholder">
+          Em breve: visualização de projetos de extensão ativos
+        </p>
+        <div class="project-status">Dados em coleta</div>
+      </div>
+
+      <div class="project-card">
+        <div class="project-icon">🔬</div>
+        <h3>Projetos de Pesquisa</h3>
+        <p class="project-placeholder">
+          Em breve: visualização de projetos de pesquisa em andamento
+        </p>
+        <div class="project-status">Dados em coleta</div>
+      </div>
+
+      <div class="project-card">
+        <div class="project-icon">💡</div>
+        <h3>Projetos de Inovação</h3>
+        <p class="project-placeholder">
+          Em breve: visualização de projetos de inovação tecnológica
+        </p>
+        <div class="project-status">Dados em coleta</div>
       </div>
     </div>
   </div>

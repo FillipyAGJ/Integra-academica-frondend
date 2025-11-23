@@ -42,7 +42,7 @@ export class ProducaoCientificaComponent implements OnInit, AfterViewInit {
     instituto: 'todos',
     campus: 'todos',
     anoInicio: 1998,
-    anoFim: 2024
+    anoFim: 2025
   };
 
   institutosDisponiveis: Instituto[] = [
@@ -91,11 +91,17 @@ export class ProducaoCientificaComponent implements OnInit, AfterViewInit {
   colaboracoesExternas: { nome: string; total: number; percentual: number }[] = [];
   areasMaisAtivas: { nome: string; total: number }[] = [];
   heatmapData: { campus: string; valores: number[] }[] = [];
-  kpis: { indiceColaboracao: number; crescimentoAnual: number; interdisciplinaridade: number } = {
-    indiceColaboracao: 0,
-    crescimentoAnual: 0,
-    interdisciplinaridade: 0
-  };
+  kpis: {
+    totalProducao: number;
+    totalDocentes: number;
+    mediaProducao: number;
+    crescimentoAnual: number
+  } = {
+      totalProducao: 0,
+      totalDocentes: 0,
+      mediaProducao: 0,
+      crescimentoAnual: 0
+    };
 
   anos: number[] = [];
   campusDisponiveis: string[] = [];
@@ -450,7 +456,12 @@ export class ProducaoCientificaComponent implements OnInit, AfterViewInit {
     return this.heatmapTodosCampus.slice(inicio, fim);
   }
 
-  getKPIs(): { indiceColaboracao: number; crescimentoAnual: number; interdisciplinaridade: number } {
+  getKPIs(): {
+    totalProducao: number;
+    totalDocentes: number;
+    mediaProducao: number;
+    crescimentoAnual: number
+  } {
     let artigos = this.siglaIF
       ? this.docentesService.getArtigosPorIF(this.siglaIF)
       : this.docentesService.getArtigos();
@@ -460,7 +471,7 @@ export class ProducaoCientificaComponent implements OnInit, AfterViewInit {
       : this.docentesService.getDocentes();
 
     if (!artigos || !docentes) {
-      return { indiceColaboracao: 0, crescimentoAnual: 0, interdisciplinaridade: 0 };
+      return { totalProducao: 0, totalDocentes: 0, mediaProducao: 0, crescimentoAnual: 0 };
     }
 
     if (this.filtros.campus !== 'todos') {
@@ -468,22 +479,25 @@ export class ProducaoCientificaComponent implements OnInit, AfterViewInit {
       docentes = docentes.filter(d => d && d.campus === this.filtros.campus);
     }
 
-    const totalArtigos = artigos.length;
-    const totalAutores = artigos.reduce((sum, a) => sum + (a?.artigo_total_autores || 0), 0);
-    const indiceColaboracao = totalArtigos > 0 ? parseFloat((totalAutores / totalArtigos).toFixed(1)) : 0;
+    // Filtra por período
+    const artigosFiltrados = artigos.filter(a =>
+      a && a.artigo_ano >= this.filtros.anoInicio && a.artigo_ano <= this.filtros.anoFim
+    );
 
+    const totalProducao = artigosFiltrados.length;
+    const totalDocentes = docentes.length;
+    const mediaProducao = totalDocentes > 0
+      ? parseFloat((totalProducao / totalDocentes).toFixed(1))
+      : 0;
+
+    // Crescimento anual
     const artigosAnoAtual = artigos.filter(a => a && a.artigo_ano === 2024).length;
     const artigosAnoAnterior = artigos.filter(a => a && a.artigo_ano === 2023).length;
     const crescimentoAnual = artigosAnoAnterior > 0
       ? Math.round(((artigosAnoAtual - artigosAnoAnterior) / artigosAnoAnterior) * 100)
       : 0;
 
-    const docentesInterdisciplinares = docentes.filter(d => d && d.interdisciplinar).length;
-    const interdisciplinaridade = docentes.length > 0
-      ? Math.round((docentesInterdisciplinares / docentes.length) * 100)
-      : 0;
-
-    return { indiceColaboracao, crescimentoAnual, interdisciplinaridade };
+    return { totalProducao, totalDocentes, mediaProducao, crescimentoAnual };
   }
 
   aplicarFiltros(): void {

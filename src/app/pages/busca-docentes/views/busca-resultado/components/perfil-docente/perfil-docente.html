@@ -456,14 +456,14 @@
           Distribuição por Tipo de Produção
         </h3>
         <div class="grafico-pizza">
-          @if (fatiasPizza().length > 0) {
+          @if (fatiasPizzaProducao().length > 0) {
           <svg
             viewBox="0 0 200 200"
             class="pizza-svg"
             role="img"
             aria-label="Gráfico de distribuição por tipo de produção"
           >
-            @for (fatia of fatiasPizza(); track $index) {
+            @for (fatia of fatiasPizzaProducao(); track $index) {
             <path
               [attr.d]="fatia.d"
               [attr.fill]="fatia.fill"
@@ -478,7 +478,7 @@
             }
           </svg>
 
-          <!-- Tooltip do gráfico de pizza -->
+          <!-- Tooltip -->
           @if (tooltipPizzaVisivel()) {
           <div
             class="tooltip-pizza"
@@ -523,61 +523,89 @@
           </div>
           }
         </div>
-
-        <!-- Insight automático -->
-        @if (insightDistribuicao()) {
-        <div class="insight-box">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path
-              d="M8 15A7 7 0 118 1a7 7 0 010 14zm0 1A8 8 0 108 0a8 8 0 000 16z"
-            />
-            <path
-              d="M8.93 6.588l-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 11-2 0 1 1 0 012 0z"
-            />
-          </svg>
-          <span>{{ insightDistribuicao() }}</span>
-        </div>
-        }
       </div>
 
       <!-- Índice de Crescimento -->
-      <div class="secao-card crescimento-card">
+      <div class="secao-card grafico-card">
         <h3>
           <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-            <path
-              fill-rule="evenodd"
-              d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z"
-              clip-rule="evenodd"
-            />
+            <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
+            <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
           </svg>
-          Índice de Crescimento Anual
+          Distribuição por Tipo de Projeto
+          <!-- ✅ MUDOU O TÍTULO -->
         </h3>
-        <div class="crescimento-valor">
-          <span
-            class="percentual"
-            [class.positivo]="crescimentoAnual().includes('+')"
-            [class.negativo]="crescimentoAnual().includes('-')"
-            [class.neutro]="!crescimentoAnual().includes('+') && !crescimentoAnual().includes('-')"
+        <div class="grafico-pizza">
+          @if (fatiasPizzaProjetos().length > 0) {
+          <!-- ✅ USA NOVO COMPUTED -->
+          <svg
+            viewBox="0 0 200 200"
+            class="pizza-svg"
+            role="img"
+            aria-label="Gráfico de distribuição por tipo de projeto"
           >
-            {{ crescimentoAnual() }}
-          </span>
-          <p class="descricao">em relação ao ano anterior</p>
-        </div>
-
-        <!-- Insight automático -->
-        @if (insightCrescimento()) {
-        <div class="insight-box">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            @for (fatia of fatiasPizzaProjetos(); track $index) {
+            <!-- ✅ USA NOVO COMPUTED -->
             <path
-              d="M8 15A7 7 0 118 1a7 7 0 010 14zm0 1A8 8 0 108 0a8 8 0 000 16z"
+              [attr.d]="fatia.d"
+              [attr.fill]="fatia.fill"
+              stroke="white"
+              stroke-width="2"
+              (mouseenter)="mostrarTooltipPizza($event, fatia.tipo, fatia.quantidade, fatia.percentual)"
+              (mouseleave)="esconderTooltipPizza()"
+              class="fatia-interativa"
+              [attr.aria-label]="fatia.tipo + ': ' + fatia.quantidade + ' (' + fatia.percentual + '%)'"
+              tabindex="0"
             />
-            <path
-              d="M8.93 6.588l-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 11-2 0 1 1 0 012 0z"
-            />
+            }
           </svg>
-          <span>{{ insightCrescimento() }}</span>
+
+          <!-- Tooltip -->
+          @if (tooltipPizzaVisivel()) {
+          <div
+            class="tooltip-pizza"
+            [style.left.px]="tooltipPizzaX()"
+            [style.top.px]="tooltipPizzaY()"
+            role="tooltip"
+          >
+            <strong>{{ tooltipPizzaTipo() }}</strong>
+            <span
+              >{{ tooltipPizzaQuantidade() }} ({{ tooltipPizzaPercentual()
+              }}%)</span
+            >
+          </div>
+          } } @else {
+          <p class="sem-dados">
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 48 48"
+              fill="currentColor"
+              opacity="0.3"
+            >
+              <path
+                d="M24 4C12.95 4 4 12.95 4 24s8.95 20 20 20 20-8.95 20-20S35.05 4 24 4zm2 30h-4v-4h4v4zm0-8h-4V14h4v12z"
+              />
+            </svg>
+            Sem dados de distribuição
+          </p>
+          }
         </div>
-        }
+        <div class="legenda-pizza">
+          @for (item of distribuicaoProjetos(); track item.tipo) {
+          <!-- ✅ USA NOVO SIGNAL -->
+          <div class="legenda-item">
+            <span
+              class="cor-indicador"
+              [style.background-color]="item.cor"
+            ></span>
+            <span class="legenda-texto"
+              >{{ item.tipo }}: <strong>{{ item.quantidade }}</strong> ({{
+              item.percentual.toFixed(1) }}%)</span
+            >
+          </div>
+          }
+        </div>
       </div>
     </div>
 

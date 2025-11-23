@@ -1,0 +1,16 @@
+<!-- projetos-linha.component.html -->
+<div class="grafico">
+  <div class="grafico-chart">
+    <h3>
+      Evolução dos Projetos ao longo dos anos na Rede Federal de Educação.
+    </h3>
+
+    @if (loading()) {
+    <div class="loading-state">
+      <p>Carregando dados...</p>
+    </div>
+    } @else {
+    <div echarts [options]="options()" class="demo-chart"></div>
+    }
+  </div>
+</div>

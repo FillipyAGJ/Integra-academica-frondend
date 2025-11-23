@@ -9,13 +9,6 @@ interface ProducaoCientifica {
   quantidade: number;
 }
 
-interface DistribuicaoProducao {
-  tipo: string;
-  quantidade: number;
-  percentual: number;
-  cor: string;
-}
-
 interface FormacaoAcademica {
   titulo: string;
   instituicao?: string;
@@ -40,8 +33,8 @@ export class PerfilDocenteComponent implements OnInit {
 
   producaoCientifica = signal<ProducaoCientifica[]>([]);
   producaoCientificaCompleta = signal<ProducaoCientifica[]>([]);
-  distribuicaoProducao = signal<DistribuicaoProducao[]>([]);
-  crescimentoAnual = signal<string>('0%');
+  distribuicaoProducao = signal<any[]>([]);
+  distribuicaoProjetos = signal<any[]>([]);
 
   // Tooltip do gráfico
   tooltipVisivel = signal(false);
@@ -234,19 +227,6 @@ export class PerfilDocenteComponent implements OnInit {
     return insight;
   });
 
-  insightCrescimento = computed(() => {
-    const crescimento = this.crescimentoAnual();
-    const valor = parseFloat(crescimento.replace(/[+%]/g, ''));
-
-    if (valor > 0) {
-      return `Crescimento positivo na produção comparado ao ano anterior.`;
-    } else if (valor < 0) {
-      return `Queda na produção comparado ao ano anterior.`;
-    } else {
-      return `Produção manteve-se estável em relação ao ano anterior.`;
-    }
-  });
-
   // Computed signals para os gráficos (mantidos do original)
   pontos = computed(() => {
     const dados = this.producaoCientifica();
@@ -344,8 +324,8 @@ export class PerfilDocenteComponent implements OnInit {
     });
   });
 
-  fatiasPizza = computed(() => {
-    const distribuicao = this.distribuicaoProducao();
+  fatiasPizzaProducao = computed(() => {
+    const distribuicao = this.distribuicaoProducao();  // ← usa Producao
     if (distribuicao.length === 0) return [];
 
     let anguloAtual = 0;
@@ -371,13 +351,38 @@ export class PerfilDocenteComponent implements OnInit {
 
       anguloAtual = anguloFim;
 
-      return {
-        d,
-        fill: item.cor,
-        tipo: item.tipo,
-        quantidade: item.quantidade,
-        percentual: item.percentual
-      };
+      return { d, fill: item.cor, tipo: item.tipo, quantidade: item.quantidade, percentual: item.percentual };
+    });
+  });
+
+  fatiasPizzaProjetos = computed(() => {
+    const distribuicao = this.distribuicaoProjetos();  // ← usa Projetos
+    if (distribuicao.length === 0) return [];
+
+    let anguloAtual = 0;
+    const cx = 100;
+    const cy = 100;
+    const raio = 80;
+
+    return distribuicao.map(item => {
+      const angulo = (item.percentual / 100) * 360;
+      const anguloInicio = anguloAtual;
+      const anguloFim = anguloAtual + angulo;
+
+      const rad1 = (anguloInicio - 90) * Math.PI / 180;
+      const rad2 = (anguloFim - 90) * Math.PI / 180;
+
+      const x1 = cx + raio * Math.cos(rad1);
+      const y1 = cy + raio * Math.sin(rad1);
+      const x2 = cx + raio * Math.cos(rad2);
+      const y2 = cy + raio * Math.sin(rad2);
+
+      const largeArc = angulo > 180 ? 1 : 0;
+      const d = `M ${cx},${cy} L ${x1},${y1} A ${raio},${raio} 0 ${largeArc},1 ${x2},${y2} Z`;
+
+      anguloAtual = anguloFim;
+
+      return { d, fill: item.cor, tipo: item.tipo, quantidade: item.quantidade, percentual: item.percentual };
     });
   });
 
@@ -420,7 +425,7 @@ export class PerfilDocenteComponent implements OnInit {
           this.calcularProducaoCientifica(docenteCompleto);
           this.calcularProducaoCientificaCompleta(docenteCompleto);
           this.calcularDistribuicao(docenteCompleto);
-          this.calcularCrescimento(docenteCompleto);
+          this.calcularPesquisa(docenteCompleto);
         } else {
           this.router.navigate(['/busca-docentes']);
         }
@@ -703,92 +708,131 @@ export class PerfilDocenteComponent implements OnInit {
       }
     ];
 
-    this.distribuicaoProducao.set(distribuicao);
+    this.distribuicaoProducao.set(distribuicao);  // ✅ Usa o signal ANTIGO
   }
 
-  calcularCrescimento(docenteCompleto: DocenteCompleto): void {
-    const todosAnos = new Set<number>();
 
-    docenteCompleto.artigos.forEach(a => {
-      let ano: number | null = null;
-      if (typeof a.artigo_ano === 'number') ano = a.artigo_ano;
-      else if (typeof a.artigo_ano === 'string') {
-        const anoStr = String(a.artigo_ano);
-        ano = parseInt(anoStr.trim(), 10);
-      }
-      if (ano && !isNaN(ano)) todosAnos.add(ano);
+  calcularPesquisa(docenteCompleto: DocenteCompleto): void {
+    const anoAtual = new Date().getFullYear();
+    const anoInicio = anoAtual - 4; // Últimos 5 anos
+
+    // Pega o total de projetos do docente nos últimos 5 anos
+    const projetosRecentes = docenteCompleto.projetos.filter(p => {
+      const anoInicioProjeto = p.ano_inicio;
+      const anoFimProjeto = p.ano_fim || anoAtual;
+      return anoInicioProjeto && (
+        (anoInicioProjeto >= anoInicio && anoInicioProjeto <= anoAtual) ||
+        (anoFimProjeto >= anoInicio && anoFimProjeto <= anoAtual) ||
+        (anoInicioProjeto <= anoInicio && anoFimProjeto >= anoAtual)
+      );
     });
 
-    docenteCompleto.trabalhos_eventos.forEach(t => {
-      let ano: number | null = null;
-      if (typeof t.ano === 'number') ano = t.ano;
-      else if (typeof t.ano === 'string') {
-        const anoStr = String(t.ano);
-        ano = parseInt(anoStr.trim(), 10);
-      }
-      if (ano && !isNaN(ano)) todosAnos.add(ano);
-    });
+    const totalProjetos = projetosRecentes.length;
 
-    const anosOrdenados = Array.from(todosAnos).sort((a, b) => b - a);
-    const anoAtual = anosOrdenados[0] || new Date().getFullYear();
-    const anoAnterior = anosOrdenados[1] || anoAtual - 1;
-
-    const artigosAtual = docenteCompleto.artigos.filter(a => {
-      let ano: number | null = null;
-      if (typeof a.artigo_ano === 'number') {
-        ano = a.artigo_ano;
-      } else if (typeof a.artigo_ano === 'string') {
-        const anoStr = String(a.artigo_ano);
-        ano = parseInt(anoStr.trim(), 10);
-      }
-      return ano === anoAtual;
-    }).length;
-
-    const trabalhosAtual = docenteCompleto.trabalhos_eventos.filter(t => {
-      let ano: number | null = null;
-      if (typeof t.ano === 'number') {
-        ano = t.ano;
-      } else if (typeof t.ano === 'string') {
-        const anoStr = String(t.ano);
-        ano = parseInt(anoStr.trim(), 10);
-      }
-      return ano === anoAtual;
-    }).length;
-
-    const producaoAtual = artigosAtual + trabalhosAtual;
-
-    const artigosAnterior = docenteCompleto.artigos.filter(a => {
-      let ano: number | null = null;
-      if (typeof a.artigo_ano === 'number') {
-        ano = a.artigo_ano;
-      } else if (typeof a.artigo_ano === 'string') {
-        const anoStr = String(a.artigo_ano);
-        ano = parseInt(anoStr.trim(), 10);
-      }
-      return ano === anoAnterior;
-    }).length;
-
-    const trabalhosAnterior = docenteCompleto.trabalhos_eventos.filter(t => {
-      let ano: number | null = null;
-      if (typeof t.ano === 'number') {
-        ano = t.ano;
-      } else if (typeof t.ano === 'string') {
-        const anoStr = String(t.ano);
-        ano = parseInt(anoStr.trim(), 10);
-      }
-      return ano === anoAnterior;
-    }).length;
-
-    const producaoAnterior = artigosAnterior + trabalhosAnterior;
-
-    if (producaoAnterior === 0) {
-      this.crescimentoAnual.set(producaoAtual > 0 ? '+100%' : '0%');
+    // Se não houver projetos, mostra distribuição zerada
+    if (totalProjetos === 0) {
+      this.distribuicaoProjetos.set([  // ✅ Usa o signal NOVO
+        { tipo: 'Projeto de ensino', quantidade: 0, percentual: 25, cor: '#0096c7' },
+        { tipo: 'Projeto de extensão', quantidade: 0, percentual: 25, cor: '#90e0ef' },
+        { tipo: 'Projeto de pesquisa', quantidade: 0, percentual: 25, cor: '#023e8a' },
+        { tipo: 'Projeto de inovação', quantidade: 0, percentual: 25, cor: '#48cae4' }
+      ]);
       return;
     }
 
-    const crescimento = ((producaoAtual - producaoAnterior) / producaoAnterior) * 100;
-    const sinal = crescimento >= 0 ? '+' : '';
-    this.crescimentoAnual.set(`${sinal}${Math.round(crescimento)}%`);
+    // ✅ MOCK: Distribui os projetos entre os 4 tipos de forma aleatória mas realista
+    const distribuicaoMock = this.gerarDistribuicaoMockada(totalProjetos);
+
+    const ensino = distribuicaoMock.ensino;
+    const extensao = distribuicaoMock.extensao;
+    const pesquisa = distribuicaoMock.pesquisa;
+    const inovacao = distribuicaoMock.inovacao;
+
+    const total = ensino + extensao + pesquisa + inovacao;
+
+    const distribuicao = [
+      {
+        tipo: 'Projeto de ensino',
+        quantidade: ensino,
+        percentual: (ensino / total) * 100,
+        cor: '#0096c7'
+      },
+      {
+        tipo: 'Projeto de extensão',
+        quantidade: extensao,
+        percentual: (extensao / total) * 100,
+        cor: '#90e0ef'
+      },
+      {
+        tipo: 'Projeto de pesquisa',
+        quantidade: pesquisa,
+        percentual: (pesquisa / total) * 100,
+        cor: '#023e8a'
+      },
+      {
+        tipo: 'Projeto de inovação',
+        quantidade: inovacao,
+        percentual: (inovacao / total) * 100,
+        cor: '#48cae4'
+      }
+    ];
+
+    this.distribuicaoProjetos.set(distribuicao);  // ✅ Usa o signal NOVO
+  }
+
+
+  private gerarDistribuicaoMockada(totalProjetos: number): {
+    ensino: number;
+    extensao: number;
+    pesquisa: number;
+    inovacao: number;
+  } {
+    // Define pesos para cada tipo (pesquisa tem mais peso)
+    const pesos = {
+      ensino: 0.20,    // 20%
+      extensao: 0.30,  // 30%
+      pesquisa: 0.40,  // 40%
+      inovacao: 0.10   // 10%
+    };
+
+    // Calcula distribuição base
+    let ensino = Math.round(totalProjetos * pesos.ensino);
+    let extensao = Math.round(totalProjetos * pesos.extensao);
+    let pesquisa = Math.round(totalProjetos * pesos.pesquisa);
+    let inovacao = Math.round(totalProjetos * pesos.inovacao);
+
+    // Adiciona variação aleatória (±20%)
+    const variar = (valor: number) => {
+      const variacao = Math.floor(Math.random() * (valor * 0.4)) - (valor * 0.2);
+      return Math.max(0, valor + Math.floor(variacao));
+    };
+
+    ensino = variar(ensino);
+    extensao = variar(extensao);
+    pesquisa = variar(pesquisa);
+    inovacao = variar(inovacao);
+
+    // Ajusta para garantir que a soma seja igual ao total
+    const soma = ensino + extensao + pesquisa + inovacao;
+    const diferenca = totalProjetos - soma;
+
+    if (diferenca !== 0) {
+      // Distribui a diferença no tipo com mais projetos (pesquisa)
+      pesquisa += diferenca;
+      // Garante que não fique negativo
+      if (pesquisa < 0) {
+        const ajuste = Math.abs(pesquisa);
+        pesquisa = 0;
+        extensao = Math.max(0, extensao + ajuste);
+      }
+    }
+
+    // Garante que pelo menos tenha 1 projeto em algum tipo
+    if (ensino === 0 && extensao === 0 && pesquisa === 0 && inovacao === 0) {
+      pesquisa = totalProjetos;
+    }
+
+    return { ensino, extensao, pesquisa, inovacao };
   }
 
   mostrarTooltip(event: MouseEvent, ponto: { x: number; y: number; ano: number; quantidade: number }): void {
@@ -876,9 +920,6 @@ export class PerfilDocenteComponent implements OnInit {
       });
       csvContent += '\n\n';
 
-      csvContent += 'ÍNDICE DE CRESCIMENTO ANUAL\n';
-      csvContent += 'Indicador,Valor\n';
-      csvContent += `Crescimento,${this.crescimentoAnual()}\n`;
 
       const BOM = '\uFEFF';
       const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });

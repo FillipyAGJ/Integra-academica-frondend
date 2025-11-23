@@ -1,0 +1,37 @@
+:host {
+  display: block;
+}
+
+// projetos-linha.component.scss
+.grafico {
+  margin-top: 30px;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  .grafico-chart {
+    h3 {
+      margin: 0 0 20px 0;
+      font-size: 18px;
+      color: #000000;
+      font-family: "Inter";
+      font-weight: 400;
+      font-style: normal;
+      color: #64748b;
+    }
+
+    .demo-chart {
+      height: 400px;
+      width: 100%;
+    }
+
+    .loading-state {
+      height: 450px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #666;
+    }
+  }
+}
