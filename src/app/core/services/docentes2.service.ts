@@ -1,91 +1,148 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/consistent-indexed-object-style */
-/* eslint-disable @typescript-eslint/no-inferrable-types */
-// docentes.service.ts - VERSÃO ANGULAR STANDALONE COM SIGNALS (CORRIGIDA)
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, tap, map } from 'rxjs';
+import { Observable, tap, map, forkJoin } from 'rxjs';
 
 // ========================================
-// INTERFACES
+// INTERFACES baseadas no Prisma Schema
 // ========================================
+
 export interface Docente {
   id: number;
+  sigla: string;
   slug: string;
   nome: string;
-  campus: string;
-  situacao: string;
-  tipo: string;
-  nome_completo: string;
-  resumo: string;
-  palavras_chave: string;
-  anos_no_ifb: number;
-  teve_gestao: boolean;
-  tem_graduacao: boolean;
-  tem_mestrado: boolean;
-  tem_doutorado: boolean;
-  tem_pos_doutorado: boolean;
-  anos_desde_doutorado?: number;
-  total_premios: number;
-  premiado: boolean;
-  principais_premios?: string;
-  total_artigos: number;
-  total_orientacoes_mestrado: number;
-  total_orientacoes_doutorado: number;
-  total_outras_orientacoes: number;
-  total_orientacoes: number;
-  total_projetos: number;
-  total_projetos_coordenador: number;
-  total_trabalhos_eventos_5anos: number;
-  diversidade_colaboracao: number;
-  interdisciplinar: boolean;
-  total_areas_diferentes: number;
-  anos_desde_pos_doutorado?: number;
+  campus: string | null;
+  cargo: string | null;
+  email: string | null;
+  url: string | null;
+  dataCompleta: string;
+  atualizadoEm: string;
 }
 
-export interface Artigo {
-  titulo: string;
-  ano: number;
-  doi?: string;
-  autores: string[];
-  total_autores: number;
+export interface DadosGerais {
+  id: number;
+  idDocente: number;
+  nomeCompleto: string | null;
+  nomeCitacao: string | null;
+  orcid: string | null;
+  resumoCv: string | null;
+  lattesUrl: string | null;
+  palavrasChave: string | null;
 }
 
+export interface AreaAtuacao {
+  id: number;
+  idDocente: number;
+  grandeArea: string | null;
+  area: string | null;
+  subarea: string | null;
+  especialidade: string | null;
+}
+
+export interface Atuacao {
+  id: number;
+  idDocente: number;
+  instituicao: string | null;
+  funcao: string | null;
+  tipoVinculo: string | null;
+  anoInicio: number | null;
+  anoFim: number | null;
+}
+
+export interface Formacao {
+  id: number;
+  idDocente: number;
+  nivel: string | null;
+  curso: string | null;
+  instituicao: string | null;
+  anoInicio: number | null;
+  anoFim: number | null;
+  titulo: string | null;
+  orientador: string | null;
+}
+
+export interface OrientacaoConcluida {
+  id: number;
+  idDocente: number;
+  nomeOrientado: string | null;
+  curso: string | null;
+  instituicao: string | null;
+  titulo: string | null;
+  ano: number | null;
+  tipoOrientacao: string | null;
+}
+
+export interface PremioTitulo {
+  id: number;
+  idDocente: number;
+  nome: string | null;
+  ano: number | null;
+  instituicao: string | null;
+}
+
+export interface ProducaoBibliografica {
+  id: number;
+  idDocente: number;
+  tipo: string | null;
+  titulo: string | null;
+  ano: number | null;
+  detalhes: string | null;
+  revistaEventoEditora: string | null;
+  numCoautores: number | null;
+  listaCoautores: string | null;
+}
+
+export interface Projeto {
+  id: number;
+  idDocente: number;
+  nome: string;
+  natureza: string | null;
+  situacao: string | null;
+  anoInicio: number | null;
+  anoFim: number | null;
+  descricao: string | null;
+  instituicao: string | null;
+  orgao: string | null;
+  flagCoordenador: string | null;
+  numIntegrantes: number | null;
+  numAlunosGraduacao: number | null;
+  numAlunosMestrado: number | null;
+  numAlunosDoutorado: number | null;
+}
+
+// Interface para docente completo (com todas as relações)
 export interface DocenteCompleto extends Docente {
-  artigos_recentes?: Artigo[];
-  formacao?: {
-    graduacoes: any[];
-    mestrados: any[];
-    doutorados: any[];
-  };
+  dadosGerais?: DadosGerais[];
+  areasAtuacao?: AreaAtuacao[];
+  atuacoes?: Atuacao[];
+  formacoes?: Formacao[];
+  orientacoesConcluidas?: OrientacaoConcluida[];
+  premiosTitulos?: PremioTitulo[];
+  producaoBibliografica?: ProducaoBibliografica[];
+  projetos?: Projeto[];
 }
 
-export interface PaginacaoResponse {
-  docentes: Docente[];
+// Interface para resposta paginada da API
+export interface PaginacaoResponse<T> {
+  dados: T[];
   paginacao: {
+    total: number;
     pagina: number;
     limite: number;
-    total: number;
-    total_paginas: number;
+    totalPaginas: number;
   };
 }
 
+// Estatísticas calculadas
 export interface Estatisticas {
-  total_docentes: number;
-  por_campus: { [campus: string]: number };
-  formacao: {
-    com_doutorado: number;
-    com_mestrado: number;
-    com_pos_doutorado: number;
-  };
-  producao_media: {
-    artigos: number;
-    orientacoes: number;
-    coautores_unicos: number;
-  };
-  gestao: {
-    com_experiencia: number;
-  };
+  totalDocentes: number;
+  porCampus: Record<string, number>;
+  porCargo: Record<string, number>;
+  totalProducoesBibliograficas: number;
+  totalProjetos: number;
+  totalOrientacoes: number;
+  totalPremios: number;
 }
 
 @Injectable({
@@ -94,8 +151,8 @@ export interface Estatisticas {
 export class DocentesService {
   private http = inject(HttpClient);
 
-  // 🔧 CONFIGURE A URL DA API AQUI!
-  private apiUrl = 'http://localhost:8000/api';
+  // 🔧 URL DA API - CONFIGURE AQUI!
+  private apiUrl = 'http://localhost:3333';
 
   // ========================================
   // SIGNALS - Estado reativo
@@ -107,199 +164,301 @@ export class DocentesService {
   // Campus disponíveis
   private campusCache = signal<string[]>([]);
 
+  // Cargos disponíveis
+  private cargosCache = signal<string[]>([]);
+
   // Estatísticas
   private estatisticasCache = signal<Estatisticas | null>(null);
 
   // Loading states
   private loadingDocentes = signal<boolean>(false);
-  private loadingEstatisticas = signal<boolean>(false);
 
   // ========================================
   // COMPUTED SIGNALS - Valores derivados
   // ========================================
 
-  // Docentes públicos (read-only)
   docentes = this.docentesCache.asReadonly();
-
-  // Campus públicos (read-only)
   campus = this.campusCache.asReadonly();
-
-  // Estatísticas públicas (read-only)
+  cargos = this.cargosCache.asReadonly();
   estatisticas = this.estatisticasCache.asReadonly();
-
-  // Loading states públicos
   isLoadingDocentes = this.loadingDocentes.asReadonly();
-  isLoadingEstatisticas = this.loadingEstatisticas.asReadonly();
-
-  // Total de docentes (computed)
   totalDocentes = computed(() => this.docentesCache().length);
 
   // ========================================
-  // MÉTODOS DA API
+  // MÉTODOS DA API - DOCENTES
   // ========================================
 
   /**
    * Lista docentes com paginação e filtros
    */
-  listarDocentes(
-    campus?: string,
-    temDoutorado?: boolean,
-    pagina: number = 1,
-    limite: number = 50
-  ): Observable<PaginacaoResponse> {
+  listarDocentes(params?: {
+    pagina?: number;
+    limite?: number;
+    campus?: string;
+    cargo?: string;
+    nome?: string;
+    ordenarPor?: string;
+    ordem?: 'asc' | 'desc';
+    incluir?: boolean; // Incluir relações
+  }): Observable<PaginacaoResponse<DocenteCompleto>> {
+    let httpParams = new HttpParams();
+
+    if (params) {
+      if (params.pagina) httpParams = httpParams.set('pagina', params.pagina.toString());
+      if (params.limite) httpParams = httpParams.set('limite', params.limite.toString());
+      if (params.campus) httpParams = httpParams.set('campus', params.campus);
+      if (params.cargo) httpParams = httpParams.set('cargo', params.cargo);
+      if (params.nome) httpParams = httpParams.set('nome', params.nome);
+      if (params.ordenarPor) httpParams = httpParams.set('ordenarPor', params.ordenarPor);
+      if (params.ordem) httpParams = httpParams.set('ordem', params.ordem);
+      if (params.incluir) httpParams = httpParams.set('incluir', 'true');
+    }
+
+    this.loadingDocentes.set(true);
+
+    return this.http.get<PaginacaoResponse<DocenteCompleto>>(`${this.apiUrl}/docentes`, { params: httpParams }).pipe(
+      tap(response => {
+        // Atualizar cache
+        if (!params?.pagina || params.pagina === 1) {
+          this.docentesCache.set(response.dados);
+        } else {
+          this.docentesCache.update(existing => [...existing, ...response.dados]);
+        }
+        this.loadingDocentes.set(false);
+      })
+    );
+  }
+
+  /**
+   * Busca TODOS os docentes (sem paginação)
+   */
+  carregarTodosDocentes(incluirRelacoes = false): Observable<Docente[]> {
+    this.loadingDocentes.set(true);
+
     let params = new HttpParams()
-      .set('pagina', pagina.toString())
-      .set('limite', limite.toString());
+      .set('limite', '10000'); // Limite alto para pegar tudo
 
-    if (campus) {
-      params = params.set('campus', campus);
-    }
-    if (temDoutorado !== undefined) {
-      params = params.set('tem_doutorado', temDoutorado.toString());
+    if (incluirRelacoes) {
+      params = params.set('incluir', 'true');
     }
 
-    this.loadingDocentes.set(true);
-
-    return this.http.get<PaginacaoResponse>(`${this.apiUrl}/docentes`, { params }).pipe(
+    return this.http.get<PaginacaoResponse<Docente>>(`${this.apiUrl}/docentes`, { params }).pipe(
       tap(response => {
-        // Atualizar cache (append para paginação)
-        const existing = this.docentesCache();
-        const newIds = new Set(response.docentes.map(d => d.id));
-        const filtered = existing.filter(d => !newIds.has(d.id));
-        this.docentesCache.set([...filtered, ...response.docentes]);
+        this.docentesCache.set(response.dados);
         this.loadingDocentes.set(false);
-      })
+
+        // Extrair campus e cargos únicos
+        const campusUnicos = [...new Set(response.dados.map(d => d.campus).filter(c => c))].sort();
+        const cargosUnicos = [...new Set(response.dados.map(d => d.cargo).filter(c => c))].sort();
+        this.campusCache.set(campusUnicos as string[]);
+        this.cargosCache.set(cargosUnicos as string[]);
+      }),
+      map(response => response.dados)
     );
   }
 
   /**
-   * Busca TODOS os docentes (use com cuidado!)
+   * Obtém um docente específico por ID
    */
-  carregarTodosDocentes(): Observable<Docente[]> {
-    this.loadingDocentes.set(true);
+  obterDocente(id: number, incluirRelacoes = true): Observable<DocenteCompleto> {
+    let params = new HttpParams();
+    if (incluirRelacoes) {
+      params = params.set('incluir', 'true');
+    }
 
-    return this.http.get<PaginacaoResponse>(`${this.apiUrl}/docentes`, {
-      params: new HttpParams().set('limite', '500')
+    return this.http.get<PaginacaoResponse<DocenteCompleto>>(`${this.apiUrl}/docentes`, { params }).pipe(
+      map(response => {
+        const docente = response.dados.find(d => d.id === id);
+        if (!docente) {
+          throw new Error(`Docente com ID ${id} não encontrado`);
+        }
+        return docente;
+      })
+    );
+  }
+
+  // ========================================
+  // MÉTODOS DA API - ENTIDADES RELACIONADAS
+  // ========================================
+
+  /**
+   * Dados Gerais
+   */
+  obterDadosGerais(docenteId?: number, params?: any): Observable<PaginacaoResponse<DadosGerais>> {
+    let httpParams = new HttpParams();
+    if (docenteId) httpParams = httpParams.set('idDocente', docenteId.toString());
+    if (params) {
+      Object.keys(params).forEach(key => {
+        httpParams = httpParams.set(key, params[key]);
+      });
+    }
+    return this.http.get<PaginacaoResponse<DadosGerais>>(`${this.apiUrl}/dados-gerais`, { params: httpParams });
+  }
+
+  /**
+   * Áreas de Atuação
+   */
+  obterAreasAtuacao(docenteId?: number): Observable<PaginacaoResponse<AreaAtuacao>> {
+    let params = new HttpParams();
+    if (docenteId) params = params.set('idDocente', docenteId.toString());
+    return this.http.get<PaginacaoResponse<AreaAtuacao>>(`${this.apiUrl}/areas-atuacao`, { params });
+  }
+
+  /**
+   * Atuações Profissionais
+   */
+  obterAtuacoes(docenteId?: number): Observable<PaginacaoResponse<Atuacao>> {
+    let params = new HttpParams();
+    if (docenteId) params = params.set('idDocente', docenteId.toString());
+    return this.http.get<PaginacaoResponse<Atuacao>>(`${this.apiUrl}/atuacoes`, { params });
+  }
+
+  /**
+   * Formações
+   */
+  obterFormacoes(docenteId?: number): Observable<PaginacaoResponse<Formacao>> {
+    let params = new HttpParams();
+    if (docenteId) params = params.set('idDocente', docenteId.toString());
+    return this.http.get<PaginacaoResponse<Formacao>>(`${this.apiUrl}/formacoes`, { params });
+  }
+
+  /**
+   * Orientações Concluídas
+   */
+  obterOrientacoes(docenteId?: number): Observable<PaginacaoResponse<OrientacaoConcluida>> {
+    let params = new HttpParams();
+    if (docenteId) params = params.set('idDocente', docenteId.toString());
+    return this.http.get<PaginacaoResponse<OrientacaoConcluida>>(`${this.apiUrl}/orientacoes-concluidas`, { params });
+  }
+
+  /**
+   * Prêmios e Títulos
+   */
+  obterPremios(docenteId?: number): Observable<PaginacaoResponse<PremioTitulo>> {
+    let params = new HttpParams();
+    if (docenteId) params = params.set('idDocente', docenteId.toString());
+    return this.http.get<PaginacaoResponse<PremioTitulo>>(`${this.apiUrl}/premios-titulos`, { params });
+  }
+
+  /**
+   * Produção Bibliográfica
+   */
+  obterProducoesBibliograficas(docenteId?: number): Observable<PaginacaoResponse<ProducaoBibliografica>> {
+    let params = new HttpParams();
+    if (docenteId) params = params.set('idDocente', docenteId.toString());
+    return this.http.get<PaginacaoResponse<ProducaoBibliografica>>(`${this.apiUrl}/producao-bibliografica`, { params });
+  }
+
+  /**
+   * Projetos
+   */
+  obterProjetos(docenteId?: number): Observable<PaginacaoResponse<Projeto>> {
+    let params = new HttpParams();
+    if (docenteId) params = params.set('idDocente', docenteId.toString());
+    return this.http.get<PaginacaoResponse<Projeto>>(`${this.apiUrl}/projetos`, { params });
+  }
+
+  // ========================================
+  // MÉTODOS AUXILIARES - DADOS COMPLETOS
+  // ========================================
+
+  /**
+   * Carrega TODOS os dados de um docente em uma única chamada
+   */
+  obterDocenteCompleto(docenteId: number): Observable<DocenteCompleto> {
+    return forkJoin({
+      docente: this.listarDocentes({ limite: 10000, incluir: false }).pipe(
+        map(response => {
+          const found = response.dados.find(d => d.id === docenteId);
+          if (!found) throw new Error(`Docente ${docenteId} não encontrado`);
+          return found;
+        })
+      ),
+      dadosGerais: this.obterDadosGerais(docenteId).pipe(map(r => r.dados)),
+      areasAtuacao: this.obterAreasAtuacao(docenteId).pipe(map(r => r.dados)),
+      atuacoes: this.obterAtuacoes(docenteId).pipe(map(r => r.dados)),
+      formacoes: this.obterFormacoes(docenteId).pipe(map(r => r.dados)),
+      orientacoes: this.obterOrientacoes(docenteId).pipe(map(r => r.dados)),
+      premios: this.obterPremios(docenteId).pipe(map(r => r.dados)),
+      producoes: this.obterProducoesBibliograficas(docenteId).pipe(map(r => r.dados)),
+      projetos: this.obterProjetos(docenteId).pipe(map(r => r.dados))
     }).pipe(
-      tap(response => {
-        this.docentesCache.set(response.docentes);
-        this.loadingDocentes.set(false);
-      }),
-      map(response => response.docentes)  // ✅ map para extrair apenas os docentes
-    );
-  }
-
-  /**
-   * Obtém um docente específico com detalhes
-   */
-  obterDocente(id: number): Observable<DocenteCompleto> {
-    return this.http.get<DocenteCompleto>(`${this.apiUrl}/docentes/${id}`);
-  }
-
-  /**
-   * Obtém artigos de um docente
-   */
-  obterArtigos(docenteId: number, limite: number = 20): Observable<{ docente: string; artigos: Artigo[]; total: number }> {
-    const params = new HttpParams().set('limite', limite.toString());
-    return this.http.get<any>(`${this.apiUrl}/docentes/${docenteId}/artigos`, { params });
-  }
-
-  /**
-   * Obtém estatísticas gerais
-   */
-  obterEstatisticas(): Observable<Estatisticas> {
-    this.loadingEstatisticas.set(true);
-
-    return this.http.get<Estatisticas>(`${this.apiUrl}/estatisticas`).pipe(
-      tap(stats => {
-        this.estatisticasCache.set(stats);
-        this.loadingEstatisticas.set(false);
-      })
-    );
-  }
-
-  /**
-   * Obtém lista de campus
-   */
-  obterCampus(): Observable<string[]> {
-    return this.http.get<{ campus: string[] }>(`${this.apiUrl}/campus`).pipe(
-      tap(response => {
-        this.campusCache.set(response.campus);
-      }),
-      map(response => response.campus)  // ✅ map para extrair apenas o array
+      map(resultado => ({
+        ...resultado.docente,
+        dadosGerais: resultado.dadosGerais,
+        areasAtuacao: resultado.areasAtuacao,
+        atuacoes: resultado.atuacoes,
+        formacoes: resultado.formacoes,
+        orientacoesConcluidas: resultado.orientacoes,
+        premiosTitulos: resultado.premios,
+        producaoBibliografica: resultado.producoes,
+        projetos: resultado.projetos
+      }))
     );
   }
 
   // ========================================
-  // MÉTODOS COM SIGNALS (alternativa async/await)
+  // FILTROS LOCAIS (cache)
   // ========================================
 
-  /**
-   * Carrega campus e atualiza o signal
-   */
-  async carregarCampusSignal(): Promise<void> {
-    try {
-      const response = await fetch(`${this.apiUrl}/campus`);
-      const data = await response.json();
-      this.campusCache.set(data.campus);
-    } catch (error) {
-      console.error('Erro ao carregar campus:', error);
-    }
-  }
-
-  /**
-   * Carrega estatísticas e atualiza o signal
-   */
-  async carregarEstatisticasSignal(): Promise<void> {
-    this.loadingEstatisticas.set(true);
-    try {
-      const response = await fetch(`${this.apiUrl}/estatisticas`);
-      const data = await response.json();
-      this.estatisticasCache.set(data);
-    } catch (error) {
-      console.error('Erro ao carregar estatísticas:', error);
-    } finally {
-      this.loadingEstatisticas.set(false);
-    }
-  }
-
-  // ========================================
-  // FILTROS LOCAIS
-  // ========================================
-
-  /**
-   * Filtra docentes do cache local
-   */
   filtrarDocentesLocal(filtros: {
     texto?: string;
     campus?: string;
-    temDoutorado?: boolean;
+    cargo?: string;
   }): Docente[] {
     return this.docentesCache().filter(docente => {
       if (filtros.texto) {
         const texto = filtros.texto.toLowerCase();
-        const match =
-          docente.nome?.toLowerCase().includes(texto) ||
-          docente.nome_completo?.toLowerCase().includes(texto) ||
-          docente.palavras_chave?.toLowerCase().includes(texto);
+        const match = docente.nome?.toLowerCase().includes(texto);
         if (!match) return false;
       }
 
       if (filtros.campus && docente.campus !== filtros.campus) return false;
-      if (filtros.temDoutorado !== undefined && docente.tem_doutorado !== filtros.temDoutorado) return false;
+      if (filtros.cargo && docente.cargo !== filtros.cargo) return false;
 
       return true;
     });
   }
 
-  /**
-   * Computed signal com filtros
-   */
-  criarDocentesFiltrados(filtros: {
-    texto?: string;
-    campus?: string;
-    temDoutorado?: boolean;
-  }) {
-    return computed(() => this.filtrarDocentesLocal(filtros));
+  // ========================================
+  // ESTATÍSTICAS
+  // ========================================
+
+  calcularEstatisticas(): void {
+    const docentes = this.docentesCache();
+
+    const porCampus: Record<string, number> = {};
+    const porCargo: Record<string, number> = {};
+
+    docentes.forEach(d => {
+      if (d.campus) {
+        porCampus[d.campus] = (porCampus[d.campus] || 0) + 1;
+      }
+      if (d.cargo) {
+        porCargo[d.cargo] = (porCargo[d.cargo] || 0) + 1;
+      }
+    });
+
+    this.estatisticasCache.set({
+      totalDocentes: docentes.length,
+      porCampus,
+      porCargo,
+      totalProducoesBibliograficas: 0, // Calcular depois com dados carregados
+      totalProjetos: 0,
+      totalOrientacoes: 0,
+      totalPremios: 0
+    });
+  }
+
+  // ========================================
+  // MÉTODOS UTILITÁRIOS
+  // ========================================
+
+  obterCampusUnicos(): string[] {
+    return this.campusCache();
+  }
+
+  obterCargosUnicos(): string[] {
+    return this.cargosCache();
   }
 }
