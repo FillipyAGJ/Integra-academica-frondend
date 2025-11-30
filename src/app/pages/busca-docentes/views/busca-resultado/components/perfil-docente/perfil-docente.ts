@@ -1,8 +1,16 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Docente, DocentesService, DocenteCompleto } from 'src/app/core/services/docentes.service';
+import {
+  DocentesService,
+  DocenteCompleto,
+  ProducaoBibliografica,
+  OrientacaoConcluida,
+  Projeto,
+  Formacao
+} from 'src/app/core/services/docentes2.service';
 
 interface ProducaoCientifica {
   ano: number;
@@ -27,7 +35,6 @@ export class PerfilDocenteComponent implements OnInit {
   private router = inject(Router);
   private docentesService = inject(DocentesService);
 
-  docente = signal<Docente | null>(null);
   docenteCompleto = signal<DocenteCompleto | null>(null);
   loading = signal(true);
 
@@ -52,27 +59,24 @@ export class PerfilDocenteComponent implements OnInit {
 
   exportando = signal<boolean>(false);
 
-  // ===== NOVOS COMPUTED SIGNALS =====
+  // ===== COMPUTED SIGNALS =====
 
-  // Titulação mais alta - VERSÃO SEGURA
+  // Acesso rápido ao docente base
+  docente = computed(() => this.docenteCompleto());
+
+  // Titulação mais alta
   titulacaoMaisAlta = computed(() => {
     const docenteCompleto = this.docenteCompleto();
     if (!docenteCompleto?.formacoes || docenteCompleto.formacoes.length === 0) {
-      return null;
+      return 'Docente';
     }
 
     const hierarquia = ['Doutorado', 'Mestrado', 'Especialização', 'Graduação'];
 
     for (const nivel of hierarquia) {
-      const formacao = docenteCompleto.formacoes.find(f => {
-        // Tenta várias propriedades possíveis
-        const titulo = (f as any).titulo || (f as any).nome || (f as any).descricao || '';
-        const tipo = (f as any).tipo || (f as any).grau || '';
-        const area = (f as any).area || (f as any).curso || '';
-
-        const textoCompleto = `${titulo} ${tipo} ${area}`.toLowerCase();
-        return textoCompleto.includes(nivel.toLowerCase());
-      });
+      const formacao = docenteCompleto.formacoes.find(f =>
+        f.nivel?.toLowerCase().includes(nivel.toLowerCase())
+      );
 
       if (formacao) {
         if (nivel === 'Doutorado') return 'Doutor(a)';
@@ -83,6 +87,32 @@ export class PerfilDocenteComponent implements OnInit {
     }
 
     return 'Docente';
+  });
+
+  // Resumo do currículo
+  resumoCurriculo = computed(() => {
+    const docenteCompleto = this.docenteCompleto();
+    if (!docenteCompleto?.dadosGerais || docenteCompleto.dadosGerais.length === 0) {
+      return null;
+    }
+    return docenteCompleto.dadosGerais[0].resumoCv;
+  });
+
+  // Palavras-chave
+  palavrasChave = computed(() => {
+    const docenteCompleto = this.docenteCompleto();
+    if (!docenteCompleto?.dadosGerais || docenteCompleto.dadosGerais.length === 0) {
+      return [];
+    }
+
+    const palavrasChave = docenteCompleto.dadosGerais[0].palavrasChave;
+    if (!palavrasChave) return [];
+
+    return palavrasChave
+      .split(/[,;]/)
+      .map(p => p.trim())
+      .filter(p => p.length > 2)
+      .slice(0, 15);
   });
 
   // Linha de pesquisa principal
@@ -96,17 +126,38 @@ export class PerfilDocenteComponent implements OnInit {
     const docenteCompleto = this.docenteCompleto();
     if (!docenteCompleto) return 0;
 
-    return (docenteCompleto.artigos?.length || 0) +
-      (docenteCompleto.trabalhos_eventos?.length || 0) +
-      (docenteCompleto.orientacoes?.length || 0) +
+    return (docenteCompleto.producaoBibliografica?.length || 0) +
+      (docenteCompleto.orientacoesConcluidas?.length || 0) +
       (docenteCompleto.projetos?.length || 0);
   });
 
   // Totais por tipo
-  totalArtigos = computed(() => this.docenteCompleto()?.artigos?.length || 0);
-  totalTrabalhos = computed(() => this.docenteCompleto()?.trabalhos_eventos?.length || 0);
-  totalOrientacoes = computed(() => this.docenteCompleto()?.orientacoes?.length || 0);
-  totalProjetos = computed(() => this.docenteCompleto()?.projetos?.length || 0);
+  totalArtigos = computed(() => {
+    const docenteCompleto = this.docenteCompleto();
+    if (!docenteCompleto?.producaoBibliografica) return 0;
+
+    return docenteCompleto.producaoBibliografica.filter(p =>
+      p.tipo?.toLowerCase().includes('artigo')
+    ).length;
+  });
+
+  totalTrabalhos = computed(() => {
+    const docenteCompleto = this.docenteCompleto();
+    if (!docenteCompleto?.producaoBibliografica) return 0;
+
+    return docenteCompleto.producaoBibliografica.filter(p =>
+      p.tipo?.toLowerCase().includes('trabalho') ||
+      p.tipo?.toLowerCase().includes('evento')
+    ).length;
+  });
+
+  totalOrientacoes = computed(() =>
+    this.docenteCompleto()?.orientacoesConcluidas?.length || 0
+  );
+
+  totalProjetos = computed(() =>
+    this.docenteCompleto()?.projetos?.length || 0
+  );
 
   // Palavras-chave principais (top 3)
   palavrasChavePrincipais = computed(() => {
@@ -148,7 +199,7 @@ export class PerfilDocenteComponent implements OnInit {
     return media > 0 ? media.toFixed(1) : null;
   });
 
-  // Formações acadêmicas - VERSÃO SEGURA
+  // Formações acadêmicas
   formacoesAcademicas = computed((): FormacaoAcademica[] => {
     const docenteCompleto = this.docenteCompleto();
     if (!docenteCompleto?.formacoes) return [];
@@ -157,22 +208,15 @@ export class PerfilDocenteComponent implements OnInit {
     const formacoesMapeadas: FormacaoAcademica[] = [];
 
     hierarquia.forEach(nivel => {
-      const formacao = docenteCompleto.formacoes.find(f => {
-        // Tenta várias propriedades possíveis
-        const titulo = (f as any).titulo || (f as any).nome || (f as any).descricao || '';
-        const tipo = (f as any).tipo || (f as any).grau || '';
-        const area = (f as any).area || (f as any).curso || '';
-
-        const textoCompleto = `${titulo} ${tipo} ${area}`.toLowerCase();
-        return textoCompleto.includes(nivel.toLowerCase());
-      });
+      const formacao = docenteCompleto.formacoes!.find(f =>
+        f.nivel?.toLowerCase().includes(nivel.toLowerCase())
+      );
 
       if (formacao) {
-        const f = formacao as any;
         formacoesMapeadas.push({
-          titulo: f.titulo || f.nome || f.descricao || `${nivel} em ${f.area || f.curso || 'Área não especificada'}`,
-          instituicao: f.instituicao || f.instituicao_nome || undefined,
-          ano: f.ano_conclusao || f.ano_fim || f.ano || undefined
+          titulo: formacao.titulo || `${nivel} em ${formacao.curso || 'Área não especificada'}`,
+          instituicao: formacao.instituicao || undefined,
+          ano: formacao.anoFim || undefined
         });
       }
     });
@@ -210,24 +254,10 @@ export class PerfilDocenteComponent implements OnInit {
     }
 
     const percentual = predominante.percentual.toFixed(1);
-    let insight = `A maior parte da produção está em ${predominante.tipo.toLowerCase()} (${percentual}%).`;
-
-    // Verificar se há poucos artigos
-    const artigos = distribuicao.find(d => d.tipo === 'Artigos');
-    if (artigos && artigos.percentual < 10 && artigos.quantidade > 0) {
-      insight += ` Há poucas publicações em artigos científicos (${artigos.percentual.toFixed(1)}%).`;
-    }
-
-    // Verificar se há projetos
-    const projetos = distribuicao.find(d => d.tipo === 'Projetos');
-    if (projetos && projetos.quantidade === 0) {
-      insight += ' Nenhum projeto registrado no período.';
-    }
-
-    return insight;
+    return `A maior parte da produção está em ${predominante.tipo.toLowerCase()} (${percentual}%).`;
   });
 
-  // Computed signals para os gráficos (mantidos do original)
+  // Computed signals para os gráficos
   pontos = computed(() => {
     const dados = this.producaoCientifica();
     if (dados.length === 0) return [];
@@ -325,7 +355,7 @@ export class PerfilDocenteComponent implements OnInit {
   });
 
   fatiasPizzaProducao = computed(() => {
-    const distribuicao = this.distribuicaoProducao();  // ← usa Producao
+    const distribuicao = this.distribuicaoProducao();
     if (distribuicao.length === 0) return [];
 
     let anguloAtual = 0;
@@ -356,7 +386,7 @@ export class PerfilDocenteComponent implements OnInit {
   });
 
   fatiasPizzaProjetos = computed(() => {
-    const distribuicao = this.distribuicaoProjetos();  // ← usa Projetos
+    const distribuicao = this.distribuicaoProjetos();
     if (distribuicao.length === 0) return [];
 
     let anguloAtual = 0;
@@ -386,49 +416,28 @@ export class PerfilDocenteComponent implements OnInit {
     });
   });
 
-  palavrasChave = computed(() => {
-    const palavrasChave = this.docente()?.palavras_chave;
-    if (!palavrasChave) return [];
-    return palavrasChave
-      .replace(/&[#\w]+;/g, '')
-      .split(',')
-      .map(p => p.trim())
-      .filter(p => p.length > 2)
-      .slice(0, 15);
-  });
-
   primeiraLetra = computed(() => {
-    const nome = this.docente()?.nome;
+    const nome = this.docenteCompleto()?.nome;
     return nome?.charAt(0).toUpperCase() || '?';
   });
 
   ngOnInit(): void {
     const docenteId = this.route.snapshot.paramMap.get('id');
     if (docenteId) {
-      this.carregarDocente(docenteId);
+      this.carregarDocente(Number(docenteId));
     }
   }
 
-  carregarDocente(id: string): void {
+  carregarDocente(id: number): void {
     this.loading.set(true);
-    const idNumerico = Number(id);
 
-    this.docentesService.carregarTodosDados().subscribe({
-      next: () => {
-        const docente = this.docentesService.getDocentes().find(d => d.id === idNumerico);
-        const docenteCompleto = this.docentesService.getDocenteCompleto(idNumerico);
-
-        if (docente && docenteCompleto) {
-          this.docente.set(docente);
-          this.docenteCompleto.set(docenteCompleto);
-
-          this.calcularProducaoCientifica(docenteCompleto);
-          this.calcularProducaoCientificaCompleta(docenteCompleto);
-          this.calcularDistribuicao(docenteCompleto);
-          this.calcularPesquisa(docenteCompleto);
-        } else {
-          this.router.navigate(['/busca-docentes']);
-        }
+    this.docentesService.obterDocenteCompleto(id).subscribe({
+      next: (docenteCompleto) => {
+        this.docenteCompleto.set(docenteCompleto);
+        this.calcularProducaoCientifica(docenteCompleto);
+        this.calcularProducaoCientificaCompleta(docenteCompleto);
+        this.calcularDistribuicao(docenteCompleto);
+        this.calcularDistribuicaoProjetos(docenteCompleto);
         this.loading.set(false);
       },
       error: (err) => {
@@ -443,28 +452,10 @@ export class PerfilDocenteComponent implements OnInit {
     const producaoPorAno = new Map<number, number>();
     const todosAnos = new Set<number>();
 
-    docenteCompleto.artigos.forEach(artigo => {
-      let ano: number | null = null;
-      if (typeof artigo.artigo_ano === 'number') {
-        ano = artigo.artigo_ano;
-      } else if (typeof artigo.artigo_ano === 'string') {
-        const anoStr = String(artigo.artigo_ano);
-        ano = parseInt(anoStr.trim(), 10);
-      }
-      if (ano && !isNaN(ano) && ano > 1991 && ano <= 2025) {
-        todosAnos.add(ano);
-      }
-    });
-
-    docenteCompleto.trabalhos_eventos.forEach(trabalho => {
-      let ano: number | null = null;
-      if (typeof trabalho.ano === 'number') {
-        ano = trabalho.ano;
-      } else if (typeof trabalho.ano === 'string') {
-        const anoStr = String(trabalho.ano);
-        ano = parseInt(anoStr.trim(), 10);
-      }
-      if (ano && !isNaN(ano) && ano > 1991 && ano <= 2025) {
+    // Processa produções bibliográficas
+    docenteCompleto.producaoBibliografica?.forEach(prod => {
+      const ano = prod.ano;
+      if (ano && ano > 1991 && ano <= 2025) {
         todosAnos.add(ano);
       }
     });
@@ -481,30 +472,9 @@ export class PerfilDocenteComponent implements OnInit {
 
     anos.forEach(ano => producaoPorAno.set(ano, 0));
 
-    docenteCompleto.artigos.forEach(artigo => {
-      let ano: number | null = null;
-      if (typeof artigo.artigo_ano === 'number') {
-        ano = artigo.artigo_ano;
-      } else if (typeof artigo.artigo_ano === 'string') {
-        const anoStr = String(artigo.artigo_ano);
-        ano = parseInt(anoStr.trim(), 10);
-      }
-
-      if (ano && !isNaN(ano) && anos.includes(ano)) {
-        producaoPorAno.set(ano, (producaoPorAno.get(ano) || 0) + 1);
-      }
-    });
-
-    docenteCompleto.trabalhos_eventos.forEach(trabalho => {
-      let ano: number | null = null;
-      if (typeof trabalho.ano === 'number') {
-        ano = trabalho.ano;
-      } else if (typeof trabalho.ano === 'string') {
-        const anoStr = String(trabalho.ano);
-        ano = parseInt(anoStr.trim(), 10);
-      }
-
-      if (ano && !isNaN(ano) && anos.includes(ano)) {
+    docenteCompleto.producaoBibliografica?.forEach(prod => {
+      const ano = prod.ano;
+      if (ano && anos.includes(ano)) {
         producaoPorAno.set(ano, (producaoPorAno.get(ano) || 0) + 1);
       }
     });
@@ -521,28 +491,9 @@ export class PerfilDocenteComponent implements OnInit {
     const producaoPorAno = new Map<number, number>();
     const todosAnos = new Set<number>();
 
-    docenteCompleto.artigos.forEach(artigo => {
-      let ano: number | null = null;
-      if (typeof artigo.artigo_ano === 'number') {
-        ano = artigo.artigo_ano;
-      } else if (typeof artigo.artigo_ano === 'string') {
-        const anoStr = String(artigo.artigo_ano);
-        ano = parseInt(anoStr.trim(), 10);
-      }
-      if (ano && !isNaN(ano) && ano > 1991 && ano <= 2025) {
-        todosAnos.add(ano);
-      }
-    });
-
-    docenteCompleto.trabalhos_eventos.forEach(trabalho => {
-      let ano: number | null = null;
-      if (typeof trabalho.ano === 'number') {
-        ano = trabalho.ano;
-      } else if (typeof trabalho.ano === 'string') {
-        const anoStr = String(trabalho.ano);
-        ano = parseInt(anoStr.trim(), 10);
-      }
-      if (ano && !isNaN(ano) && ano > 1991 && ano <= 2025) {
+    docenteCompleto.producaoBibliografica?.forEach(prod => {
+      const ano = prod.ano;
+      if (ano && ano > 1991 && ano <= 2025) {
         todosAnos.add(ano);
       }
     });
@@ -555,30 +506,9 @@ export class PerfilDocenteComponent implements OnInit {
     const anosOrdenados = Array.from(todosAnos).sort((a, b) => a - b);
     anosOrdenados.forEach(ano => producaoPorAno.set(ano, 0));
 
-    docenteCompleto.artigos.forEach(artigo => {
-      let ano: number | null = null;
-      if (typeof artigo.artigo_ano === 'number') {
-        ano = artigo.artigo_ano;
-      } else if (typeof artigo.artigo_ano === 'string') {
-        const anoStr = String(artigo.artigo_ano);
-        ano = parseInt(anoStr.trim(), 10);
-      }
-
-      if (ano && !isNaN(ano) && anosOrdenados.includes(ano)) {
-        producaoPorAno.set(ano, (producaoPorAno.get(ano) || 0) + 1);
-      }
-    });
-
-    docenteCompleto.trabalhos_eventos.forEach(trabalho => {
-      let ano: number | null = null;
-      if (typeof trabalho.ano === 'number') {
-        ano = trabalho.ano;
-      } else if (typeof trabalho.ano === 'string') {
-        const anoStr = String(trabalho.ano);
-        ano = parseInt(anoStr.trim(), 10);
-      }
-
-      if (ano && !isNaN(ano) && anosOrdenados.includes(ano)) {
+    docenteCompleto.producaoBibliografica?.forEach(prod => {
+      const ano = prod.ano;
+      if (ano && anosOrdenados.includes(ano)) {
         producaoPorAno.set(ano, (producaoPorAno.get(ano) || 0) + 1);
       }
     });
@@ -592,82 +522,41 @@ export class PerfilDocenteComponent implements OnInit {
   }
 
   calcularDistribuicao(docenteCompleto: DocenteCompleto): void {
-    const todosAnos = new Set<number>();
-
-    docenteCompleto.artigos.forEach(a => {
-      let ano: number | null = null;
-      if (typeof a.artigo_ano === 'number') ano = a.artigo_ano;
-      else if (typeof a.artigo_ano === 'string') {
-        const anoStr = String(a.artigo_ano);
-        ano = parseInt(anoStr.trim(), 10);
-      }
-      if (ano && !isNaN(ano)) todosAnos.add(ano);
-    });
-
-    docenteCompleto.trabalhos_eventos.forEach(t => {
-      let ano: number | null = null;
-      if (typeof t.ano === 'number') ano = t.ano;
-      else if (typeof t.ano === 'string') {
-        const anoStr = String(t.ano);
-        ano = parseInt(anoStr.trim(), 10);
-      }
-      if (ano && !isNaN(ano)) todosAnos.add(ano);
-    });
-
-    docenteCompleto.orientacoes.forEach(o => {
-      if (o.ano) todosAnos.add(o.ano);
-    });
-
-    docenteCompleto.projetos.forEach(p => {
-      if (p.ano_inicio) todosAnos.add(p.ano_inicio);
-      if (p.ano_fim) todosAnos.add(p.ano_fim);
-    });
-
-    const anosOrdenados = Array.from(todosAnos).sort((a, b) => a - b);
-    const anoInicio = anosOrdenados.length > 0 ? anosOrdenados[Math.max(0, anosOrdenados.length - 5)] : new Date().getFullYear() - 4;
     const anoAtual = new Date().getFullYear();
+    const anoInicio = anoAtual - 4;
 
     let totalArtigos = 0;
     let totalTrabalhos = 0;
     let totalOrientacoes = 0;
     let totalProjetos = 0;
 
-    totalArtigos = docenteCompleto.artigos.filter(a => {
-      let ano: number | null = null;
-      if (typeof a.artigo_ano === 'number') {
-        ano = a.artigo_ano;
-      } else if (typeof a.artigo_ano === 'string') {
-        const anoStr = String(a.artigo_ano);
-        ano = parseInt(anoStr.trim(), 10);
-      }
-      return ano && !isNaN(ano) && ano >= anoInicio && ano <= anoAtual;
-    }).length;
+    // Artigos
+    totalArtigos = docenteCompleto.producaoBibliografica?.filter(p =>
+      p.tipo?.toLowerCase().includes('artigo') &&
+      p.ano && p.ano >= anoInicio && p.ano <= anoAtual
+    ).length || 0;
 
-    totalTrabalhos = docenteCompleto.trabalhos_eventos.filter(t => {
-      let ano: number | null = null;
-      if (typeof t.ano === 'number') {
-        ano = t.ano;
-      } else if (typeof t.ano === 'string') {
-        const anoStr = String(t.ano);
-        ano = parseInt(anoStr.trim(), 10);
-      }
-      return ano && !isNaN(ano) && ano >= anoInicio && ano <= anoAtual;
-    }).length;
+    // Trabalhos em eventos
+    totalTrabalhos = docenteCompleto.producaoBibliografica?.filter(p =>
+      (p.tipo?.toLowerCase().includes('trabalho') || p.tipo?.toLowerCase().includes('evento')) &&
+      p.ano && p.ano >= anoInicio && p.ano <= anoAtual
+    ).length || 0;
 
-    totalOrientacoes = docenteCompleto.orientacoes.filter(o => {
-      const ano = o.ano;
-      return ano && ano >= anoInicio && ano <= anoAtual;
-    }).length;
+    // Orientações
+    totalOrientacoes = docenteCompleto.orientacoesConcluidas?.filter(o =>
+      o.ano && o.ano >= anoInicio && o.ano <= anoAtual
+    ).length || 0;
 
-    totalProjetos = docenteCompleto.projetos.filter(p => {
-      const anoInicioProjeto = p.ano_inicio;
-      const anoFimProjeto = p.ano_fim || anoAtual;
+    // Projetos
+    totalProjetos = docenteCompleto.projetos?.filter(p => {
+      const anoInicioProjeto = p.anoInicio;
+      const anoFimProjeto = p.anoFim || anoAtual;
       return anoInicioProjeto && (
         (anoInicioProjeto >= anoInicio && anoInicioProjeto <= anoAtual) ||
         (anoFimProjeto >= anoInicio && anoFimProjeto <= anoAtual) ||
         (anoInicioProjeto <= anoInicio && anoFimProjeto >= anoAtual)
       );
-    }).length;
+    }).length || 0;
 
     const total = totalArtigos + totalTrabalhos + totalOrientacoes + totalProjetos;
 
@@ -708,30 +597,27 @@ export class PerfilDocenteComponent implements OnInit {
       }
     ];
 
-    this.distribuicaoProducao.set(distribuicao);  // ✅ Usa o signal ANTIGO
+    this.distribuicaoProducao.set(distribuicao);
   }
 
-
-  calcularPesquisa(docenteCompleto: DocenteCompleto): void {
+  calcularDistribuicaoProjetos(docenteCompleto: DocenteCompleto): void {
     const anoAtual = new Date().getFullYear();
-    const anoInicio = anoAtual - 4; // Últimos 5 anos
+    const anoInicio = anoAtual - 4;
 
-    // Pega o total de projetos do docente nos últimos 5 anos
-    const projetosRecentes = docenteCompleto.projetos.filter(p => {
-      const anoInicioProjeto = p.ano_inicio;
-      const anoFimProjeto = p.ano_fim || anoAtual;
+    const projetosRecentes = docenteCompleto.projetos?.filter(p => {
+      const anoInicioProjeto = p.anoInicio;
+      const anoFimProjeto = p.anoFim || anoAtual;
       return anoInicioProjeto && (
         (anoInicioProjeto >= anoInicio && anoInicioProjeto <= anoAtual) ||
         (anoFimProjeto >= anoInicio && anoFimProjeto <= anoAtual) ||
         (anoInicioProjeto <= anoInicio && anoFimProjeto >= anoAtual)
       );
-    });
+    }) || [];
 
     const totalProjetos = projetosRecentes.length;
 
-    // Se não houver projetos, mostra distribuição zerada
     if (totalProjetos === 0) {
-      this.distribuicaoProjetos.set([  // ✅ Usa o signal NOVO
+      this.distribuicaoProjetos.set([
         { tipo: 'Projeto de ensino', quantidade: 0, percentual: 25, cor: '#0096c7' },
         { tipo: 'Projeto de extensão', quantidade: 0, percentual: 25, cor: '#90e0ef' },
         { tipo: 'Projeto de pesquisa', quantidade: 0, percentual: 25, cor: '#023e8a' },
@@ -740,13 +626,18 @@ export class PerfilDocenteComponent implements OnInit {
       return;
     }
 
-    // ✅ MOCK: Distribui os projetos entre os 4 tipos de forma aleatória mas realista
-    const distribuicaoMock = this.gerarDistribuicaoMockada(totalProjetos);
+    // Conta projetos por natureza
+    const porNatureza = new Map<string, number>();
+    projetosRecentes.forEach(p => {
+      const natureza = p.natureza?.toLowerCase() || 'outro';
+      porNatureza.set(natureza, (porNatureza.get(natureza) || 0) + 1);
+    });
 
-    const ensino = distribuicaoMock.ensino;
-    const extensao = distribuicaoMock.extensao;
-    const pesquisa = distribuicaoMock.pesquisa;
-    const inovacao = distribuicaoMock.inovacao;
+    // Mapeia para categorias padrão
+    const ensino = porNatureza.get('ensino') || 0;
+    const extensao = porNatureza.get('extensão') || porNatureza.get('extensao') || 0;
+    const pesquisa = porNatureza.get('pesquisa') || 0;
+    const inovacao = porNatureza.get('inovação') || porNatureza.get('inovacao') || porNatureza.get('desenvolvimento') || 0;
 
     const total = ensino + extensao + pesquisa + inovacao;
 
@@ -754,85 +645,30 @@ export class PerfilDocenteComponent implements OnInit {
       {
         tipo: 'Projeto de ensino',
         quantidade: ensino,
-        percentual: (ensino / total) * 100,
+        percentual: total > 0 ? (ensino / total) * 100 : 0,
         cor: '#0096c7'
       },
       {
         tipo: 'Projeto de extensão',
         quantidade: extensao,
-        percentual: (extensao / total) * 100,
+        percentual: total > 0 ? (extensao / total) * 100 : 0,
         cor: '#90e0ef'
       },
       {
         tipo: 'Projeto de pesquisa',
         quantidade: pesquisa,
-        percentual: (pesquisa / total) * 100,
+        percentual: total > 0 ? (pesquisa / total) * 100 : 0,
         cor: '#023e8a'
       },
       {
         tipo: 'Projeto de inovação',
         quantidade: inovacao,
-        percentual: (inovacao / total) * 100,
+        percentual: total > 0 ? (inovacao / total) * 100 : 0,
         cor: '#48cae4'
       }
     ];
 
-    this.distribuicaoProjetos.set(distribuicao);  // ✅ Usa o signal NOVO
-  }
-
-
-  private gerarDistribuicaoMockada(totalProjetos: number): {
-    ensino: number;
-    extensao: number;
-    pesquisa: number;
-    inovacao: number;
-  } {
-    // Define pesos para cada tipo (pesquisa tem mais peso)
-    const pesos = {
-      ensino: 0.20,    // 20%
-      extensao: 0.30,  // 30%
-      pesquisa: 0.40,  // 40%
-      inovacao: 0.10   // 10%
-    };
-
-    // Calcula distribuição base
-    let ensino = Math.round(totalProjetos * pesos.ensino);
-    let extensao = Math.round(totalProjetos * pesos.extensao);
-    let pesquisa = Math.round(totalProjetos * pesos.pesquisa);
-    let inovacao = Math.round(totalProjetos * pesos.inovacao);
-
-    // Adiciona variação aleatória (±20%)
-    const variar = (valor: number) => {
-      const variacao = Math.floor(Math.random() * (valor * 0.4)) - (valor * 0.2);
-      return Math.max(0, valor + Math.floor(variacao));
-    };
-
-    ensino = variar(ensino);
-    extensao = variar(extensao);
-    pesquisa = variar(pesquisa);
-    inovacao = variar(inovacao);
-
-    // Ajusta para garantir que a soma seja igual ao total
-    const soma = ensino + extensao + pesquisa + inovacao;
-    const diferenca = totalProjetos - soma;
-
-    if (diferenca !== 0) {
-      // Distribui a diferença no tipo com mais projetos (pesquisa)
-      pesquisa += diferenca;
-      // Garante que não fique negativo
-      if (pesquisa < 0) {
-        const ajuste = Math.abs(pesquisa);
-        pesquisa = 0;
-        extensao = Math.max(0, extensao + ajuste);
-      }
-    }
-
-    // Garante que pelo menos tenha 1 projeto em algum tipo
-    if (ensino === 0 && extensao === 0 && pesquisa === 0 && inovacao === 0) {
-      pesquisa = totalProjetos;
-    }
-
-    return { ensino, extensao, pesquisa, inovacao };
+    this.distribuicaoProjetos.set(distribuicao);
   }
 
   mostrarTooltip(event: MouseEvent, ponto: { x: number; y: number; ano: number; quantidade: number }): void {
@@ -870,7 +706,6 @@ export class PerfilDocenteComponent implements OnInit {
 
   filtrarPorPalavra(palavra: string): void {
     console.log('Filtrar por palavra:', palavra);
-    // Implementar navegação ou filtro
   }
 
   voltar(): void {
@@ -881,7 +716,7 @@ export class PerfilDocenteComponent implements OnInit {
     this.exportando.set(true);
 
     try {
-      const docente = this.docente();
+      const docente = this.docenteCompleto();
       if (!docente) {
         alert('Nenhum dado de docente disponível para exportar.');
         this.exportando.set(false);
@@ -892,10 +727,9 @@ export class PerfilDocenteComponent implements OnInit {
 
       csvContent += 'INFORMAÇÕES DO DOCENTE\n';
       csvContent += 'Campo,Valor\n';
-      csvContent += `Nome,${this.escapeCsv(docente.nome || docente.nome_completo || '')}\n`;
+      csvContent += `Nome,${this.escapeCsv(docente.nome || '')}\n`;
       csvContent += `Campus,${this.escapeCsv(docente.campus || '')}\n`;
       csvContent += `Titulação,${this.escapeCsv(this.titulacaoMaisAlta() || '')}\n`;
-      csvContent += `Área Principal,${this.escapeCsv(docente.palavras_chave?.split(',')[0] || '')}\n`;
       csvContent += `Produções Totais,${this.producaoTotal()}\n`;
       csvContent += '\n\n';
 
@@ -920,14 +754,13 @@ export class PerfilDocenteComponent implements OnInit {
       });
       csvContent += '\n\n';
 
-
       const BOM = '\uFEFF';
       const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = window.URL.createObjectURL(blob);
 
       const link = document.createElement('a');
       link.href = url;
-      const nomeArquivo = (docente.nome || docente.nome_completo || 'docente')
+      const nomeArquivo = (docente.nome || 'docente')
         .replace(/\s+/g, '_')
         .toLowerCase()
         .normalize('NFD')

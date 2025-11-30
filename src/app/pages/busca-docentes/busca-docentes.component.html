@@ -20,64 +20,42 @@
       <z-form-field>
         <z-form-control>
           <z-select
-            id="instituto"
-            zPlaceholder="Instituto Federal"
+            id="campus"
+            zPlaceholder="Campus"
             class="input-g"
             [zMultiple]="true"
             [zMaxLabelCount]="2"
-            [zValue]="institutosSelecionados()"
-            (zSelectionChange)="onInstitutoChange($event)"
+            [zValue]="campusSelecionados()"
+            (zSelectionChange)="onCampusChange($event)"
           >
-            @for (instituto of institutoOptions(); track instituto.value) {
-            <z-select-item [zValue]="instituto.value">{{
-              instituto.label
+            @for (campus of campusOptions(); track campus.value) {
+            <z-select-item [zValue]="campus.value">{{
+              campus.label
             }}</z-select-item>
             }
           </z-select>
         </z-form-control>
       </z-form-field>
 
-      <div class="campus-titulacao">
-        <z-form-field>
-          <z-form-control>
-            <z-select
-              id="campus"
-              zPlaceholder="Campus"
-              class="selects"
-              [zMultiple]="true"
-              [zMaxLabelCount]="2"
-              [zValue]="campusSelecionados()"
-              (zSelectionChange)="onCampusChange($event)"
-            >
-              @for (campus of campusOptions(); track campus.value) {
-              <z-select-item [zValue]="campus.value">{{
-                campus.label
-              }}</z-select-item>
-              }
-            </z-select>
-          </z-form-control>
-        </z-form-field>
-
-        <z-form-field>
-          <z-form-control>
-            <z-select
-              id="titulacao"
-              zPlaceholder="Titulação"
-              class="selects"
-              [zMultiple]="true"
-              [zMaxLabelCount]="2"
-              [zValue]="titulacoesSelecionadas()"
-              (zSelectionChange)="onTitulacaoChange($event)"
-            >
-              @for (titulacao of titulacaoOptions(); track titulacao.value) {
-              <z-select-item [zValue]="titulacao.value">{{
-                titulacao.label
-              }}</z-select-item>
-              }
-            </z-select>
-          </z-form-control>
-        </z-form-field>
-      </div>
+      <z-form-field>
+        <z-form-control>
+          <z-select
+            id="titulacao"
+            zPlaceholder="Titulação"
+            class="input-g"
+            [zMultiple]="true"
+            [zMaxLabelCount]="2"
+            [zValue]="titulacoesSelecionadas()"
+            (zSelectionChange)="onTitulacaoChange($event)"
+          >
+            @for (titulacao of titulacaoOptions(); track titulacao.value) {
+            <z-select-item [zValue]="titulacao.value">{{
+              titulacao.label
+            }}</z-select-item>
+            }
+          </z-select>
+        </z-form-control>
+      </z-form-field>
 
       <z-form-field>
         <z-form-control>
@@ -165,7 +143,7 @@
         <div class="docente-info-compact">
           <h3>{{ docente.nome }}</h3>
           <p class="campus-info">{{ getCampusLabel(docente.campus) }}</p>
-          <p class="area-info">{{ getAreaLabel(docente.palavras_chave) }}</p>
+          <p class="area-info">{{ getAreaLabel(docente) }}</p>
         </div>
 
         <div class="docente-acao-compact">

@@ -121,6 +121,11 @@ export interface DocenteCompleto extends Docente {
   premiosTitulos?: PremioTitulo[];
   producaoBibliografica?: ProducaoBibliografica[];
   projetos?: Projeto[];
+
+  // Propriedades computadas (opcionais)
+  resumo?: string | null;          // ← ADICIONA ISSO
+  palavrasChave?: string | null;    // ← E ISSO
+  nome_completo?: string | null
 }
 
 // Interface para resposta paginada da API
@@ -392,8 +397,65 @@ export class DocentesService {
         orientacoesConcluidas: resultado.orientacoes,
         premiosTitulos: resultado.premios,
         producaoBibliografica: resultado.producoes,
-        projetos: resultado.projetos
+        projetos: resultado.projetos,
+        // ✅ ADICIONA ESSAS LINHAS:
+        resumo: resultado.dadosGerais[0]?.resumoCv || null,
+        palavrasChave: resultado.dadosGerais[0]?.palavrasChave || null,
+        nome_completo: resultado.dadosGerais[0]?.nomeCompleto || null
       }))
+    );
+  }
+
+  // ========================================
+  // MÉTODOS UTILITÁRIOS
+  // ========================================
+
+  /**
+   * Obtém lista de campus
+   */
+  obterCampus(): Observable<string[]> {
+    // Se já tem no cache, retorna
+    if (this.campusCache().length > 0) {
+      return new Observable(observer => {
+        observer.next(this.campusCache());
+        observer.complete();
+      });
+    }
+
+    // Senão, carrega docentes e extrai campus
+    return this.carregarTodosDocentes().pipe(
+      map(() => this.campusCache())
+    );
+  }
+
+  /**
+   * Carrega campus e atualiza o signal (async/await)
+   */
+  async carregarCampusSignal(): Promise<void> {
+    if (this.campusCache().length === 0) {
+      await this.carregarTodosDocentes().toPromise();
+    }
+  }
+
+  /**
+   * Obtém estatísticas gerais
+   */
+  obterEstatisticas(): Observable<Estatisticas> {
+    // Se já tem no cache, retorna
+    const cached = this.estatisticasCache();
+    if (cached) {
+      return new Observable(observer => {
+        observer.next(cached);
+        observer.complete();
+      });
+    }
+
+    // Senão, calcula
+    return this.carregarTodosDocentes().pipe(
+      map(() => {
+        this.calcularEstatisticas();
+        return this.estatisticasCache()!;
+      })
     );
   }
 
@@ -449,10 +511,6 @@ export class DocentesService {
       totalPremios: 0
     });
   }
-
-  // ========================================
-  // MÉTODOS UTILITÁRIOS
-  // ========================================
 
   obterCampusUnicos(): string[] {
     return this.campusCache();
