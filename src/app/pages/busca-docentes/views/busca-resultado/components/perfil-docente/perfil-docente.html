@@ -16,7 +16,7 @@
         </div>
 
         <div class="info-texto">
-          <h1>{{ docente()?.nome || docente()?.nome_completo }}</h1>
+          <h1>{{ docente()?.nome }}</h1>
 
           @if (titulacaoMaisAlta()) {
           <p class="titulacao">
@@ -239,7 +239,7 @@
       }
 
       <!-- Atuação Profissional -->
-      @if (docente()?.resumo) {
+      @if (resumoCurriculo()) {
       <div class="secao-card atuacao-card">
         <h3>
           <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
@@ -254,7 +254,7 @@
           </svg>
           Atuação Profissional
         </h3>
-        <p class="atuacao-texto">{{ docente()?.resumo }}</p>
+        <p class="atuacao-texto">{{ resumoCurriculo() }}</p>
       </div>
       }
 

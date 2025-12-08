@@ -10,7 +10,7 @@ import {
   OrientacaoConcluida,
   Projeto,
   Formacao
-} from 'src/app/core/services/docentes2.service';
+} from 'src/app/core/services/docentes3.service';
 
 interface ProducaoCientifica {
   ano: number;
@@ -92,26 +92,26 @@ export class PerfilDocenteComponent implements OnInit {
   // Resumo do currículo
   resumoCurriculo = computed(() => {
     const docenteCompleto = this.docenteCompleto();
-    if (!docenteCompleto?.dadosGerais || docenteCompleto.dadosGerais.length === 0) {
+    if (!docenteCompleto?.dados_gerais) {
       return null;
     }
-    return docenteCompleto.dadosGerais[0].resumoCv;
+    return docenteCompleto.dados_gerais.resumo_cv;
   });
 
   // Palavras-chave
   palavrasChave = computed(() => {
     const docenteCompleto = this.docenteCompleto();
-    if (!docenteCompleto?.dadosGerais || docenteCompleto.dadosGerais.length === 0) {
+    if (!docenteCompleto?.dados_gerais) {
       return [];
     }
 
-    const palavrasChave = docenteCompleto.dadosGerais[0].palavrasChave;
+    const palavrasChave = docenteCompleto.dados_gerais.palavras_chave;
     if (!palavrasChave) return [];
 
     return palavrasChave
       .split(/[,;]/)
-      .map(p => p.trim())
-      .filter(p => p.length > 2)
+      .map((p: string) => p.trim())
+      .filter((p: string) => p.length > 2)
       .slice(0, 15);
   });
 
@@ -126,33 +126,33 @@ export class PerfilDocenteComponent implements OnInit {
     const docenteCompleto = this.docenteCompleto();
     if (!docenteCompleto) return 0;
 
-    return (docenteCompleto.producaoBibliografica?.length || 0) +
-      (docenteCompleto.orientacoesConcluidas?.length || 0) +
+    return (docenteCompleto.producoes?.length || 0) +
+      (docenteCompleto.orientacoes?.length || 0) +
       (docenteCompleto.projetos?.length || 0);
   });
 
   // Totais por tipo
   totalArtigos = computed(() => {
     const docenteCompleto = this.docenteCompleto();
-    if (!docenteCompleto?.producaoBibliografica) return 0;
+    if (!docenteCompleto?.producoes) return 0;
 
-    return docenteCompleto.producaoBibliografica.filter(p =>
+    return docenteCompleto.producoes.filter((p: ProducaoBibliografica) =>
       p.tipo?.toLowerCase().includes('artigo')
     ).length;
   });
 
   totalTrabalhos = computed(() => {
     const docenteCompleto = this.docenteCompleto();
-    if (!docenteCompleto?.producaoBibliografica) return 0;
+    if (!docenteCompleto?.producoes) return 0;
 
-    return docenteCompleto.producaoBibliografica.filter(p =>
+    return docenteCompleto.producoes.filter((p: ProducaoBibliografica) =>
       p.tipo?.toLowerCase().includes('trabalho') ||
       p.tipo?.toLowerCase().includes('evento')
     ).length;
   });
 
   totalOrientacoes = computed(() =>
-    this.docenteCompleto()?.orientacoesConcluidas?.length || 0
+    this.docenteCompleto()?.orientacoes?.length || 0
   );
 
   totalProjetos = computed(() =>
@@ -216,7 +216,7 @@ export class PerfilDocenteComponent implements OnInit {
         formacoesMapeadas.push({
           titulo: formacao.titulo || `${nivel} em ${formacao.curso || 'Área não especificada'}`,
           instituicao: formacao.instituicao || undefined,
-          ano: formacao.anoFim || undefined
+          ano: formacao.ano_fim || undefined
         });
       }
     });
@@ -431,21 +431,21 @@ export class PerfilDocenteComponent implements OnInit {
   carregarDocente(id: number): void {
     this.loading.set(true);
 
-    this.docentesService.obterDocenteCompleto(id).subscribe({
-      next: (docenteCompleto) => {
-        this.docenteCompleto.set(docenteCompleto);
-        this.calcularProducaoCientifica(docenteCompleto);
-        this.calcularProducaoCientificaCompleta(docenteCompleto);
-        this.calcularDistribuicao(docenteCompleto);
-        this.calcularDistribuicaoProjetos(docenteCompleto);
-        this.loading.set(false);
-      },
-      error: (err) => {
-        console.error('Erro ao carregar docente:', err);
-        this.loading.set(false);
-        this.router.navigate(['/busca-docentes']);
-      }
-    });
+    const docenteCompleto = this.docentesService.getDocenteCompleto(id);
+
+    if (!docenteCompleto) {
+      console.error('Docente não encontrado');
+      this.loading.set(false);
+      this.router.navigate(['/busca-docentes']);
+      return;
+    }
+
+    this.docenteCompleto.set(docenteCompleto);
+    this.calcularProducaoCientifica(docenteCompleto);
+    this.calcularProducaoCientificaCompleta(docenteCompleto);
+    this.calcularDistribuicao(docenteCompleto);
+    this.calcularDistribuicaoProjetos(docenteCompleto);
+    this.loading.set(false);
   }
 
   calcularProducaoCientifica(docenteCompleto: DocenteCompleto): void {
@@ -453,7 +453,7 @@ export class PerfilDocenteComponent implements OnInit {
     const todosAnos = new Set<number>();
 
     // Processa produções bibliográficas
-    docenteCompleto.producaoBibliografica?.forEach(prod => {
+    docenteCompleto.producoes?.forEach((prod: ProducaoBibliografica) => {
       const ano = prod.ano;
       if (ano && ano > 1991 && ano <= 2025) {
         todosAnos.add(ano);
@@ -472,7 +472,7 @@ export class PerfilDocenteComponent implements OnInit {
 
     anos.forEach(ano => producaoPorAno.set(ano, 0));
 
-    docenteCompleto.producaoBibliografica?.forEach(prod => {
+    docenteCompleto.producoes?.forEach((prod: ProducaoBibliografica) => {
       const ano = prod.ano;
       if (ano && anos.includes(ano)) {
         producaoPorAno.set(ano, (producaoPorAno.get(ano) || 0) + 1);
@@ -491,7 +491,7 @@ export class PerfilDocenteComponent implements OnInit {
     const producaoPorAno = new Map<number, number>();
     const todosAnos = new Set<number>();
 
-    docenteCompleto.producaoBibliografica?.forEach(prod => {
+    docenteCompleto.producoes?.forEach((prod: ProducaoBibliografica) => {
       const ano = prod.ano;
       if (ano && ano > 1991 && ano <= 2025) {
         todosAnos.add(ano);
@@ -506,7 +506,7 @@ export class PerfilDocenteComponent implements OnInit {
     const anosOrdenados = Array.from(todosAnos).sort((a, b) => a - b);
     anosOrdenados.forEach(ano => producaoPorAno.set(ano, 0));
 
-    docenteCompleto.producaoBibliografica?.forEach(prod => {
+    docenteCompleto.producoes?.forEach((prod: ProducaoBibliografica) => {
       const ano = prod.ano;
       if (ano && anosOrdenados.includes(ano)) {
         producaoPorAno.set(ano, (producaoPorAno.get(ano) || 0) + 1);
@@ -531,26 +531,26 @@ export class PerfilDocenteComponent implements OnInit {
     let totalProjetos = 0;
 
     // Artigos
-    totalArtigos = docenteCompleto.producaoBibliografica?.filter(p =>
+    totalArtigos = docenteCompleto.producoes?.filter((p: ProducaoBibliografica) =>
       p.tipo?.toLowerCase().includes('artigo') &&
       p.ano && p.ano >= anoInicio && p.ano <= anoAtual
     ).length || 0;
 
     // Trabalhos em eventos
-    totalTrabalhos = docenteCompleto.producaoBibliografica?.filter(p =>
+    totalTrabalhos = docenteCompleto.producoes?.filter((p: ProducaoBibliografica) =>
       (p.tipo?.toLowerCase().includes('trabalho') || p.tipo?.toLowerCase().includes('evento')) &&
       p.ano && p.ano >= anoInicio && p.ano <= anoAtual
     ).length || 0;
 
     // Orientações
-    totalOrientacoes = docenteCompleto.orientacoesConcluidas?.filter(o =>
+    totalOrientacoes = docenteCompleto.orientacoes?.filter((o: OrientacaoConcluida) =>
       o.ano && o.ano >= anoInicio && o.ano <= anoAtual
     ).length || 0;
 
     // Projetos
-    totalProjetos = docenteCompleto.projetos?.filter(p => {
-      const anoInicioProjeto = p.anoInicio;
-      const anoFimProjeto = p.anoFim || anoAtual;
+    totalProjetos = docenteCompleto.projetos?.filter((p: Projeto) => {
+      const anoInicioProjeto = p.ano_inicio;
+      const anoFimProjeto = p.ano_fim || anoAtual;
       return anoInicioProjeto && (
         (anoInicioProjeto >= anoInicio && anoInicioProjeto <= anoAtual) ||
         (anoFimProjeto >= anoInicio && anoFimProjeto <= anoAtual) ||
@@ -604,9 +604,9 @@ export class PerfilDocenteComponent implements OnInit {
     const anoAtual = new Date().getFullYear();
     const anoInicio = anoAtual - 4;
 
-    const projetosRecentes = docenteCompleto.projetos?.filter(p => {
-      const anoInicioProjeto = p.anoInicio;
-      const anoFimProjeto = p.anoFim || anoAtual;
+    const projetosRecentes = docenteCompleto.projetos?.filter((p: Projeto) => {
+      const anoInicioProjeto = p.ano_inicio;
+      const anoFimProjeto = p.ano_fim || anoAtual;
       return anoInicioProjeto && (
         (anoInicioProjeto >= anoInicio && anoInicioProjeto <= anoAtual) ||
         (anoFimProjeto >= anoInicio && anoFimProjeto <= anoAtual) ||
@@ -628,7 +628,7 @@ export class PerfilDocenteComponent implements OnInit {
 
     // Conta projetos por natureza
     const porNatureza = new Map<string, number>();
-    projetosRecentes.forEach(p => {
+    projetosRecentes.forEach((p: Projeto) => {
       const natureza = p.natureza?.toLowerCase() || 'outro';
       porNatureza.set(natureza, (porNatureza.get(natureza) || 0) + 1);
     });
@@ -735,7 +735,7 @@ export class PerfilDocenteComponent implements OnInit {
 
       csvContent += 'PALAVRAS-CHAVE DA PESQUISA\n';
       csvContent += 'Palavra-chave\n';
-      this.palavrasChave().forEach(palavra => {
+      this.palavrasChave().forEach((palavra: string) => {
         csvContent += `${this.escapeCsv(palavra)}\n`;
       });
       csvContent += '\n\n';

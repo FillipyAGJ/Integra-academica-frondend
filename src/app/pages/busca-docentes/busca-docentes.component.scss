@@ -147,7 +147,6 @@ h3 {
   }
 
   h1 {
-
     color: #000000;
     margin-bottom: 0.5rem;
     font-size: 32px;
@@ -155,7 +154,7 @@ h3 {
     font-weight: 500;
     font-style: normal;
     margin-top: 9px;
-    }
+  }
 
   .filtro-busca-topo {
     margin-bottom: 3rem;
@@ -278,6 +277,13 @@ h3 {
       margin: 0 0 0.5rem 0;
     }
 
+    .instituto-info {
+      font-size: 0.9rem;
+      color: #0096c7;
+      font-weight: 600;
+      margin: 0.25rem 0;
+    }
+
     .campus-info {
       font-size: 0.95rem;
       color: #4a5568;
@@ -296,7 +302,7 @@ h3 {
 
     .btn-ver-perfil {
       padding: 0.75rem 2rem;
-      background-color: #266AA6;
+      background-color: #266aa6;
       color: white;
       border: none;
       border-radius: 0.5rem;
@@ -307,7 +313,7 @@ h3 {
       white-space: nowrap;
 
       &:hover {
-        background-color: #266AA6;
+        background-color: #266aa6;
         transform: translateY(-1px);
         box-shadow: 0 4px 12px rgba(0, 150, 199, 0.3);
       }
@@ -392,7 +398,7 @@ h3 {
   }
 }
 
-.imagem-ilustrativa{
+.imagem-ilustrativa {
   width: 480px;
   margin-right: 90px;
 }
